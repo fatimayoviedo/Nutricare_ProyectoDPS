@@ -1,0 +1,32 @@
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+
+# testing and builds
+/coverage
+/.next/
+/out/
+
+# production
+/build
+
+# local files
+.DS_Store
+*.pem
+*.log
+
+# environment files (keep the documented template)
+.env*
+!.env.example
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# Firebase private credentials
+serviceAccountKey.json
+*-firebase-adminsdk-*.json
