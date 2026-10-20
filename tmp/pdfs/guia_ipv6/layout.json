@@ -1,0 +1,254 @@
+[
+  {
+    "page": 1,
+    "title": "IPv6 y SSH desde cero",
+    "bottom": 188.3,
+    "exercise": null
+  },
+  {
+    "page": 2,
+    "title": "Cómo estudiar y navegar",
+    "bottom": 201.8,
+    "exercise": null
+  },
+  {
+    "page": 3,
+    "title": "Qué debía lograr el laboratorio",
+    "bottom": 146.3,
+    "exercise": null
+  },
+  {
+    "page": 4,
+    "title": "Las palabras que necesitas primero",
+    "bottom": 340.1,
+    "exercise": "A"
+  },
+  {
+    "page": 5,
+    "title": "Cómo viaja una orden hasta el servidor",
+    "bottom": 142.1,
+    "exercise": null
+  },
+  {
+    "page": 6,
+    "title": "Leer una dirección IPv6",
+    "bottom": 199.6,
+    "exercise": null
+  },
+  {
+    "page": 7,
+    "title": "Qué significan la subred y el prefijo",
+    "bottom": 230.9,
+    "exercise": null
+  },
+  {
+    "page": 8,
+    "title": "Ejercicio de direcciones y destinos",
+    "bottom": 324.6,
+    "exercise": "B"
+  },
+  {
+    "page": 9,
+    "title": "Qué es SSH y qué ocurre al conectarte",
+    "bottom": 107.8,
+    "exercise": null
+  },
+  {
+    "page": 10,
+    "title": "Cómo leer comandos sin ejecutarlos a ciegas",
+    "bottom": 313.0,
+    "exercise": "C"
+  },
+  {
+    "page": 11,
+    "title": "Preparar lo necesario antes de configurar",
+    "bottom": 178.3,
+    "exercise": null
+  },
+  {
+    "page": 12,
+    "title": "Crear e instalar Ubuntu y Fedora",
+    "bottom": 203.7,
+    "exercise": null
+  },
+  {
+    "page": 13,
+    "title": "Crear e instalar FreeBSD",
+    "bottom": 193.8,
+    "exercise": null
+  },
+  {
+    "page": 14,
+    "title": "Conectar las tres máquinas a desafio2",
+    "bottom": 131.2,
+    "exercise": null
+  },
+  {
+    "page": 15,
+    "title": "Asignar IPv6 a Ubuntu Desktop",
+    "bottom": 204.3,
+    "exercise": null
+  },
+  {
+    "page": 16,
+    "title": "Asignar IPv6 a Fedora con nmcli",
+    "bottom": 190.8,
+    "exercise": null
+  },
+  {
+    "page": 17,
+    "title": "Asignar IPv6 a FreeBSD con sysrc",
+    "bottom": 90.4,
+    "exercise": null
+  },
+  {
+    "page": 18,
+    "title": "Leer interfaces, rutas y vecinos",
+    "bottom": 167.7,
+    "exercise": null
+  },
+  {
+    "page": 19,
+    "title": "Probar conectividad con ping",
+    "bottom": 255.4,
+    "exercise": null
+  },
+  {
+    "page": 20,
+    "title": "Interpretar las estadísticas reales",
+    "bottom": 218.3,
+    "exercise": "D"
+  },
+  {
+    "page": 21,
+    "title": "Preparar el servidor SSH de Fedora",
+    "bottom": 274.2,
+    "exercise": null
+  },
+  {
+    "page": 22,
+    "title": "Autorizar el tráfico en el firewall",
+    "bottom": 219.0,
+    "exercise": null
+  },
+  {
+    "page": 23,
+    "title": "Mantener SELinux activo en Fedora",
+    "bottom": 343.5,
+    "exercise": "E"
+  },
+  {
+    "page": 24,
+    "title": "Configurar SSH en FreeBSD",
+    "bottom": 261.7,
+    "exercise": null
+  },
+  {
+    "page": 25,
+    "title": "Entrar desde Ubuntu a Fedora",
+    "bottom": 185.8,
+    "exercise": null
+  },
+  {
+    "page": 26,
+    "title": "Entrar desde Ubuntu a FreeBSD",
+    "bottom": 237.5,
+    "exercise": "F"
+  },
+  {
+    "page": 27,
+    "title": "Huellas del servidor y claves del usuario",
+    "bottom": 237.8,
+    "exercise": null
+  },
+  {
+    "page": 28,
+    "title": "Comprobar que todo persiste al reiniciar",
+    "bottom": 197.7,
+    "exercise": null
+  },
+  {
+    "page": 29,
+    "title": "Qué muestran realmente las evidencias",
+    "bottom": 184.5,
+    "exercise": null
+  },
+  {
+    "page": 30,
+    "title": "Diagnóstico cuando no hay comunicación",
+    "bottom": 149.1,
+    "exercise": null
+  },
+  {
+    "page": 31,
+    "title": "Diagnóstico cuando SSH falla",
+    "bottom": 268.3,
+    "exercise": "G"
+  },
+  {
+    "page": 32,
+    "title": "Laboratorio mental con cambios de escenario",
+    "bottom": 317.9,
+    "exercise": "H"
+  },
+  {
+    "page": 33,
+    "title": "Organizar la defensa de diez minutos",
+    "bottom": 183.9,
+    "exercise": null
+  },
+  {
+    "page": 34,
+    "title": "Tu bloque de dos minutos",
+    "bottom": 276.4,
+    "exercise": "I"
+  },
+  {
+    "page": 35,
+    "title": "Preguntas básicas con respuestas razonadas",
+    "bottom": 107.1,
+    "exercise": null
+  },
+  {
+    "page": 36,
+    "title": "Preguntas técnicas y de análisis crítico",
+    "bottom": 92.4,
+    "exercise": null
+  },
+  {
+    "page": 37,
+    "title": "Soluciones de conceptos y conectividad",
+    "bottom": 138.9,
+    "exercise": null
+  },
+  {
+    "page": 38,
+    "title": "Soluciones de seguridad y diagnóstico",
+    "bottom": 98.9,
+    "exercise": null
+  },
+  {
+    "page": 39,
+    "title": "Autoevaluación antes de defender",
+    "bottom": 251.5,
+    "exercise": "plan"
+  },
+  {
+    "page": 40,
+    "title": "Hoja de consulta rápida",
+    "bottom": 132.9,
+    "exercise": null
+  },
+  {
+    "page": 41,
+    "title": "Fuentes y lecturas para profundizar",
+    "bottom": 82.3,
+    "exercise": null
+  },
+  {
+    "page": 42,
+    "title": "Fuentes sobre SSH y seguridad",
+    "bottom": 84.7,
+    "exercise": null
+  }
+]

@@ -1,0 +1,590 @@
+PAGINA 1
+1 
+ 
+UNIVERSIDAD DON BOSCO 
+ 
+CAMPUS UDB VIRTUAL 
+ 
+  
+ASIGNATURA: 
+Admin. e Implem. de Serv. de Red/Sist. Operativos Libres  
+ASI941 G01T 
+DESAFÍO 2 
+DOCENTE:  
+Napoleón López 
+INTEGRANTES: 
+Nunfio Méndez, Ariel Omar NM253359 
+Saa Hernández, Eduardo Christian SH251921   
+Hernandez Sánchez José Angel HS240400 
+Oviedo Martínez, Fátima Yesenia    OM160481 
+Peña Rivera, Gerardo Alberto   PR243362 
+ 
+ 
+San Salvador, 18 de septiembre de 2026 
+ 
+ 
+ 
+
+
+PAGINA 2
+2 
+ 
+Contenido 
+Introducción ................................ ................................ ................................ ................................ ..................... 1 
+Objetivos ................................ ................................ ................................ ................................ ............................  2 
+Diseño de la infraestructura virtual ................................ ................................ ................................ ........ 3 
+Creación de Ubuntu Cliente ................................ ................................ ................................ ................... 3 
+Creación de FreeBSD Server ................................ ................................ ................................ ................. 5 
+Creación de Fedora Server ................................ ................................ ................................ .................... 6 
+Interconexión mediante una red interna ................................ ................................ .........................  8 
+Red interna y plan IPv6 ................................ ................................ ................................ ...............................  8 
+Instalación de Ubuntu Desktop ................................ ................................ ................................ ................ 9 
+Inicio de sesión en Ubuntu ................................ ................................ ................................ .................. 10 
+Plan de direccionamiento IPV6 ................................ ................................ ................................ .............. 11 
+Verificación de IPv6 en Ubuntu ................................ ................................ ................................ ......... 12 
+Instalación de Fedora Server ................................ ................................ ................................ ................... 13 
+Acceso local a Fedora Server ................................ ................................ ................................ .............. 14 
+Configuración IPv6 de Fedora ................................ ................................ ................................ ............ 14 
+Servicio SSH en Fedora Linux ................................ ................................ ................................ .................. 16 
+Acceso SSH desde Ubuntu hacia Fedora ................................ ................................ .........................  17 
+Inicio de instalación de FreeBSD................................ ................................ ................................ ............ 18 
+Partición del disco FreeBSD ................................ ................................ ................................ ................ 18 
+Configuración IPv6 de FreeBSD ................................ ................................ ................................ ............. 20 
+Validación de red en FreeBSD ................................ ................................ ................................ ............ 21 
+Acceso SSH desde FreeBSD hacia Fedora ................................ ................................ ......................  22 
+Configuración SSH de FreeBSD ................................ ................................ ................................ .......... 22 
+Prueba de conexión remota desde Ubuntu hacia FreeBSD ................................ .........................  23 
+Análisis de resultados ................................ ................................ ................................ ................................  24 
+Conclusiones ................................ ................................ ................................ ................................ .................. 25 
+Fátima Oviedo ................................ ................................ ................................ ................................ ........... 25 
+Referencias: ................................ ................................ ................................ ................................ .................... 26 
+ 
+ 
+
+PAGINA 3
+1 
+ 
+Introducción 
+ 
+El presente documento evidencia la implementación de una infraestructura virtualizada 
+compuesta por un cliente Ubuntu Desktop y dos servidores Fedora Linux y FreeBSD. Los 
+tres equipos fueron conectados mediante una red interna de VirtualBox y configurados 
+con direccionamiento IPv6 estático dentro del prefijo 2001:db8:1::/64. 
+ 
+Posterior a verificar la comunicación entre los sistemas, se configuró el servicio SSH en 
+los servidores Fedora Linux y FreeBSD utilizando el puerto TCP 3625. Asimismo, se 
+realizaron pruebas de conectividad y acceso remoto desde Ubuntu Desktop, con el 
+propósito de co mprobar el funcionamiento de la red y aplicar prácticas básicas de 
+administración remota y seguridad.  
+
+PAGINA 4
+2 
+ 
+Objetivos 
+ 
+General: 
+Implementar una infraestructura virtual con direccionamiento IPv6 que permita la 
+comunicación entre Ubuntu Desktop, Fedora Linux y FreeBSD, y la administración remota 
+de los servidores mediante SSH en el puerto 3625. 
+ 
+Específicos: 
+• Crear y configurar tres máquinas virtuales en una misma red interna. 
+• Asignar direcciones IPv6 estáticas dentro de una misma subred. 
+• Validar el acceso remoto desde Ubuntu Desktop hacia ambos servidores. 
+• Habilitar el acceso SSH desde Ubuntu Desktop hacia Fedora Linux y FreeBSD 
+mediante cuentas de usuario y el puerto TCP 3625. 
+• Documentar los comandos, resultados y buenas prácticas aplicadas. 
+ 
+  
+
+PAGINA 5
+3 
+ 
+Diseño de la infraestructura virtual 
+Como primer punto, utilizamos Oracle VM VirtualBox para crear tres equipos con 
+funciones diferenciadas. Ubuntu Desktop actúa como estación  de administración, 
+mientras Fedora Linux y FreeBSD ofrecen el acceso remoto al servicio SSH. 
+VirtualBox proporciona el entorno de ejecución y el enlace virtual compartido.  
+Equipo Sistema y función Interfaz Rol Red  
+Ubuntu_Cliente Ubuntu Desktop; cliente SSH enp0s3 Cliente Desktop desafio2 
+Fedora_Server Fedora Linux; servidor SSH enp0s3 Servidor Linux desafio2 
+FreeBSD_Server FreeBSD; servidor SSH em0 Servidor BSD desafio2 
+ 
+Creación de Ubuntu Cliente 
+Se creó una máquina virtual para Ubuntu Desktop, que funcionará como cliente de 
+administración. En el asistente se define el nombre de la máquina, la ubicación de sus 
+archivos, la imagen de instalación y el tipo de sistema operativo. Estos datos permiten 
+identificar el equipo y arrancar el instalador adecuado. 
+Nota: La memoria RAM y los procesadores virtuales determinan los recursos disponibles 
+para el sistema invitado. Deben ser suficientes para ejecutar el escritorio y la terminal sin 
+agotar los recursos del equipo anfitrión. La creación de la máquina todavía no configura 
+su dirección IPv6 ni habilita SSH. 
+ 
+
+PAGINA 6
+4 
+ 
+ 
+Figura 1. Configuración Ubuntu Cliente. Creación propia. 
+ 
+Figura 2.  Asignación de recursos de la máquina Ubuntu Cliente. Creación propia. 
+
+
+PAGINA 7
+5 
+ 
+Creación de FreeBSD Server 
+Se creó una segunda máquina virtual destinada al servidor FreeBSD. Se seleccionó el tipo 
+de sistema correspondiente y su medio de instalación. Mantener nombres distintos para 
+cliente y servidores nos facili tará más adelante  reconocer qué equipo se está 
+configurando durante la práctica. 
+Nota: La asignación de recursos permite que el servidor arranque y atienda las 
+conexiones remotas. La red se configura después de la instalación; compartir el mismo 
+anfitrión no conecta automáticamente las máquinas entre sí. 
+ 
+Figura 3. Creación y configuración de la máquina virtual FreeBSD Server. Creación propia. 
+
+
+PAGINA 8
+6 
+ 
+ 
+Figura 4. Asignación de recursos de procesamiento y memoria de la máquina FreeBSD. Creación propia. 
+ 
+Creación de Fedora Server 
+Se creó la máquina Fedora Server utilizando la imagen de instalación correspondiente. 
+Este equipo actuará como servidor Linux y recibirá conexiones SSH desde Ubuntu 
+Desktop y, como prueba adicional, desde FreeBSD. 
+Nota: La separación en máquinas independientes permite observar diferencias de 
+administración entre Linux y FreeBSD. Cada equipo tiene su propio sistema operativo, 
+cuentas, configuración de red y servicio SSH. 
+ 
+
+
+PAGINA 9
+7 
+ 
+ 
+Figura 5. Creación y configuración de la máquina virtual Fedora Server. Creación propia. 
+ 
+Figura 6. Asignación de recursos de procesamiento y memoria de la máquina Fedora. Creación propia. 
+ 
+ 
+
+
+PAGINA 10
+8 
+ 
+Interconexión mediante una red interna 
+ 
+Figura 7. Se muestran las tres máquinas virtuales en VirtualBox. Creación propia. 
+Red interna y plan IPv6 
+Una vez creadas las tres máquinas, se configuró el adaptador de red de cada una desde 
+Configuración > Red.  
+En Adaptador 1 se seleccionó Red interna y se utilizó el nombre desafio2 para el enlace 
+compartido. 
+El nombre de la red interna debe coincidir en los tres equipos y el cable virtual debe estar 
+conectado. Este modo permite intercambiar tráfico entre los invitados asociados a esa 
+red sin darles, por sí solo, acceso a Internet (Oracle, s. f.) . Si se requieren paquetes 
+adicionales, deben instalarse antes del aislamiento o mediante una conexión temporal 
+documentada. 
+ 
+Figura 8.  Configuración del adaptador virtual en modo Red interna. Creación propia 
+ 
+  
+
+
+PAGINA 11
+9 
+ 
+Instalación de Ubuntu Desktop 
+Se inició Ubuntu desde su medio de instalación. La pantalla de arranque permite 
+seleccionar la opción de inicio del instalador; posteriormente se siguen las opciones de 
+idioma, teclado, almacenamiento y creación de cuenta hasta completar el proceso. 
+ 
+Figura 9. Menú de arranque del medio de Ubuntu. 
+ 
+Figura 10. Proceso de instalación de Ubuntu Desktop. 
+  
+
+
+PAGINA 12
+10 
+ 
+Inicio de sesión en Ubuntu 
+Al finalizar la instalación se mostró la pantalla de inicio de sesión de Ubuntu. Se ingresó 
+con la cuenta configurada y se accedió al escritorio, desde el cual se puede abrir la 
+configuración de red y la terminal. 
+ 
+Figura 11. Pantalla de inicio de sesión de Ubuntu. 
+ 
+  
+
+
+PAGINA 13
+11 
+ 
+Plan de direccionamiento IPV6 
+Equipo Dirección IPv6 Prefijo 
+Ubuntu_Cliente 2001:db8:1::10 /64 
+Fedora_Server 2001:db8:1::20 /64 
+FreeBSD_Server 2001:db8:1::30 /64 
+ 
+En Ubuntu se abrió la configuración de red, luego se seleccionó el método Manual para 
+IPv6 y se asignó 2001:db8:1::10 con prefijo 64. Se dejó vacía la puerta de enlace porque 
+la comunicación ocurre dentro del mismo enlace y subred. 
+ 
+Figura 12. Asignación manual de IPv6 en la interfaz gráfica de Ubuntu 
+Las tres direcciones comparten los primeros 64 bits de red y difieren en la identificación 
+del equipo.  
+El bloque 2001:db8::/32 está reservado para documentación; se conserva en este 
+escenario aislado, pero no debe utilizarse como direccionamiento público real ni 
+confundirse con un prefijo privado de producción (Huston et al., 2004). 
+ 
+ 
+
+
+PAGINA 14
+12 
+ 
+Verificación de IPv6 en Ubuntu 
+ 
+ 
+Figura 13. Información de la conexión de red de Ubuntu. 
+Después de aplicar los cambios se consultó la información de la tarjeta de red en la 
+interfaz gráfica y se ejecutó ip a desde la terminal. Ambas consultas permiten contrastar 
+la dirección configurada con la dirección efectiva de la interfaz. 
+ip a  
+# Consulta específica de direcciones IPv6:  
+ip -6 addr 
+ 
+ 
+Figura 14. Salida de ip a con la dirección IPv6 del cliente  
+La dirección 2001:db8:1::10/64 corresponde al cliente según el plan. Las direcciones que 
+comienzan por fe80 son de enlace local; su presencia es normal y no reemplaza la 
+dirección estática utilizada en las pruebas (Hinden & Deering, 2006).  
+ 
+
+
+PAGINA 15
+13 
+ 
+Instalación de Fedora Server 
+Se inició el instalador de Fedora y se revisaron sus opciones principales.  
+La pantalla de resumen agrupa ajustes como destino de instalación, idioma y cuentas. Se 
+configuró el usuario que posteriormente se utilizará para acceder al servidor. 
+ 
+Figura 15. Resumen de configuración del instalador de Fedora.  Creación propia. 
+ 
+Figura 16. Creación de la cuenta de usuario en Fedora. Creación propia. 
+  
+
+
+PAGINA 16
+14 
+ 
+Acceso local a Fedora Server 
+Se utilizó la cuenta fedoraserver para las tareas de administración. Este acceso permite 
+ejecutar los comandos de red y administrar el servicio SSH desde la máquina virtual. 
+- Usuario:fedoraserver 
+- clave:root 
+ 
+Figura 17. Inicio de sesión fedoraserver desde la consola, posterior a su instalación. Creación propia. 
+ 
+Configuración IPv6 de Fedora 
+Se utilizó ip link para identificar la interfaz de red. En este equipo corresponde a enp0s3. 
+Luego se creó un perfil de NetworkManager llamado IPv6-lab, se asignó la dirección 
+estática y se activó la conexión. 
+ip link 
+sudo nmcli connection add type ethernet ifname enp0s3 \ 
+ con-name "ipv6-lab" ipv6.method manual \ 
+ipv6.addresses 2001:db8:1::20/64 
+sudo nmcli connection up "ipv6-lab" 
+ip -6 addr show dev enp0s3 
+ 
+ 
+Figura 18. Identificación de la interfaz de Fedora. 
+
+
+PAGINA 17
+15 
+ 
+ 
+Figura 19. Creación y activación del perfil IPv6-lab mediante nmcli. 
+ 
+ 
+Figura 20. Dirección 2001:db8:1::20/64 aplicada en enp0s3 
+Ipv6.method manual evita depender de asignación automática para esta dirección. La 
+salida final confirma el valor previsto. Si el perfil ya existe, debe modificarse en lugar de 
+crearlo repetidamente; el nombre de interfaz debe comprobarse en cada instalación 
+  
+
+
+PAGINA 18
+16 
+ 
+Servicio SSH en Fedora Linux 
+Configuramos el servidor OpenSSH para recibir conexiones en el puerto 3625.  
+En /etc/ssh/sshd_config se estableció la directiva Port 3625 y se reinició sshd. La 
+directiva define el puerto de escucha del servidor; el cliente debe seleccionar el mismo 
+puerto al iniciar la conexión (Canonical, s. f.). 
+El comando sed registrado reemplaza la línea comentada #Port 22; la consulta posterior 
+con grep permite observar la directiva escrita. Si el archivo tiene otro formato, ese 
+reemplazo puede no producir el cambio esperado. 
+sudo sed -i 's/#Port 22/Port 3625/' /etc/ssh/sshd_config 
+sudo cat /etc/ssh/sshd_config | grep Port 
+ 
+Figura 21. Modificación del puerto SSH de Fedora 
+ 
+Figura 22. Operaciones sobre SELinux y el firewall. 
+ 
+Figura 23.  Reinicio de sshd y verificación de escucha. 
+Durante la prueba se ejecutó setenforce 0, que coloca temporalmente SELinux en modo 
+permisivo. También se agregó una regla permanente para TCP 3625 con firewall-cmd, se 
+recargó el firewall y se reinició sshd. El resultado success corresponde a la operación del 
+firewall; no demuestra por sí solo que una conexión remota sea posible. 
+sudo firewall-cmd --add-port=3625/tcp --permanent 
+sudo firewall-cmd --reload 
+sudo systemctl restart sshd 
+La salida de escucha muestra el puerto 3625. Mantener SELinux permisivo es una 
+limitación de seguridad: la solución definitiva debe autorizar el puerto y repetir el acceso 
+con SELinux activo, como se explica en el análisis. 
+  
+
+
+PAGINA 19
+17 
+ 
+Acceso SSH desde Ubuntu hacia Fedora 
+Desde Ubuntu Cliente se ejecutó SSH indicando el puerto 3625, el usuario fedoraserver y 
+la dirección IPv6 del servidor Fedora. El cliente solicitó confirmar la clave del servidor y 
+luego la contraseña de la cuenta remota. 
+ssh -p 3625 fedoraserver@2001:db8:1::20 
+ 
+Figura 24. Sesión SSH iniciada desde Ubuntu hacia Fedora en el puerto 3625. 
+La secuencia termina en el prompt fedoraserver@localhost, lo que, junto con el comando 
+de conexión y la autenticación, demuestra el acceso a Fedora.  
+El cambio de texto del prompt por sí solo no basta: debe interpretarse con toda la 
+secuencia mostrada. 
+El aviso de clave desconocida aparece porque el cliente no tenía registrada la identidad 
+del servidor. Se observa su aceptación, pero no una comparación independiente de la 
+huella. Como buena práctica, la huella debe verificarse antes de aceptar una clave nueva. 
+Con esta sesión se comprobó el acceso requerido desde Ubuntu a Fedora por TCP 3625.  
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+
+PAGINA 20
+18 
+ 
+Inicio de instalación de FreeBSD 
+Se inició el instalador de FreeBSD. La captura muestra una solicitud de configuración 
+mediante DHCP durante esa etapa. Este paso pertenece a la instalación y no reemplaza la 
+dirección IPv6 estática que posteriormente se asigna al servidor. 
+ 
+Figura 25. Solicitud de una concesión DHCP durante la instalación de FreeBSD. 
+Conviene distinguir la conectividad temporal del instalador de la configuración final del 
+laboratorio. El direccionamiento que se evaluará entre las máquinas es 
+2001:db8:1::30/64 en em0, cuya aplicación se documenta más adelante. 
+Partición del disco FreeBSD 
+El instalador solicitó elegir el disco virtual y el esquema de particionado. En esta etapa se 
+determina sobre qué dispositivo se instalará el sistema y cómo se organizarán sus 
+particiones. 
+ 
+Figura 26. Opciones del método de particionado para instalar FreeBSD. 
+
+
+PAGINA 21
+19 
+ 
+ 
+Figura 27. Selección del esquema de particionado de FreeBSD. 
+ 
+Figura 28. Selección del esquema de particionado. 
+La operación afecta al disco seleccionado dentro de la máquina virtual. Antes de 
+confirmar, se debe indicar  el dispositivo de destino y su capacidad. El particionado 
+prepara el almacenamiento; todavía no configura SSH ni el direccionamiento final. 
+ 
+ 
+ 
+ 
+ 
+ 
+
+
+PAGINA 22
+20 
+ 
+Configuración IPv6 de FreeBSD 
+Se ejecutó ifconfig para identificar la interfaz y consultar sus direcciones.  
+• En FreeBSD la interfaz se llama em0.  
+Con sysrc se registró la dirección IPv6 en la configuración de arranque del sistema. 
+ifconfig 
+sysrc ifconfig_em0_ipv6="inet6 2001:db8:1::30 prefixlen 64" 
+ 
+ 
+Figura 29. Estado inicial de la interfaz em0 obtenido con ifconfig 
+ 
+Figura 30. Registro de la dirección IPv6 estática mediante sysrc. 
+ 
+inet6 identifica la familia IPv6 y prefixlen 64 define el prefijo. sysrc modifica la variable 
+correspondiente en la configuración del sistema. Para aplicar el cambio a la interfaz se 
+reinició el servicio de red, tal como se muestra en el siguiente apartado. 
+ 
+ 
+ 
+
+
+PAGINA 23
+21 
+ 
+Validación de red en FreeBSD 
+Al reiniciar netif para em0 se aplicó la configuración registrada. La consulta muestra la 
+dirección 2001:db8:1::30/64.  
+service netif restart em0 
+ 
+Figura 31. Aplicación de la configuración IPv6 en em0. 
+Una vez asignada la dirección IPv6, se ejecutó ping6 para verificar la comunicación desde 
+FreeBSD Server hacia Fedora Server. 
+ifconfig em0 
+ping6 -c 4 2001:db8:1::20 
+ 
+Figura 32. Prueba de conectividad desde FreeBSD hacia Fedora. 
+La prueba indica cuatro paquetes enviados, cuatro recibidos y 0,0 % de pérdida. El tiempo 
+medio mostrado es 1,078 ms.  
+Esto confirma conectividad durante el ensayo; no obstante, no demuestra por sí solo que 
+SSH esté disponible ni que la red permanecerá operativa después de reiniciar. 
+Nota: Una respuesta a ping no garantiza SSH: el servicio, el firewall y la autenticación 
+deben comprobarse por separado. 
+ 
+
+
+PAGINA 24
+22 
+ 
+Acceso SSH desde FreeBSD hacia Fedora 
+Después de comprobar la conectividad, se realizó una conexión SSH desde la consola de 
+FreeBSD hacia Fedora. El comand o, visible en la captura, utiliza el usuario fedoraserver, 
+la dirección terminada en ::20 y el puerto 3625. 
+ssh -p 3625 fedoraserver@2001:db8:1::20 
+ 
+Figura 33. Acceso remoto adicional de FreeBSD hacia Fedora mediante SSH 
+El prompt inicial pertenece a FreeBSD y, tras la autenticación, aparece la sesión del 
+usuario fedoraserver. Esta prueba complementa las conexiones obligatorias desde 
+Ubuntu y confirma un acceso adicional entre los servidores. 
+Configuración SSH de FreeBSD 
+Se abrió /etc/ssh/sshd_config con el editor ee y se modificó la directiva del puerto a Port 
+3625. Después de guardar el archivo, se reinició sshd para que el servicio leyera la nueva 
+configuración. 
+ee /etc/ssh/sshd_config 
+# Directiva del archivo 
+Port 3625 
+# Aplicación del cambio 
+service sshd restart 
+ 
+Figura 34. Configuración del puerto y reinicio del servicio SSH en FreeBSD 
+La salida registra comprobaciones de configuración y arranque del servicio. Este cambio 
+habilita el servidor para recibir conexiones por el puerto elegido; los clientes deben usar 
+también la opción -p 3625. La prueba del siguiente apartado verifica el acceso efectivo 
+desde Ubuntu. 
+Para comprobar el arranque automático puede consultarse sysrc sshd_enable y, si 
+corresponde, establecer sshd_enable="YES". Esta comprobación de persistencia debe 
+documentarse adicionalmente (The FreeBSD Project, s. f.). 
+
+
+PAGINA 25
+23 
+ 
+Prueba de conexión remota desde Ubuntu hacia FreeBSD 
+Desde Ubuntu se verificó primero la conectividad IPv6 y luego el acceso SSH hacia 
+FreeBSD.  
+El comando ping6 envió cuatro solicitudes al servidor . La captura muestra cuatro 
+respuestas y 0 % de pérdida. 
+ping6 -c 4 2001:db8:1::30 
+ssh -p 3625 freebsd@2001:db8:1::30 
+ 
+ Figura 35. Conectividad ICMPv6 entre Ubuntu y FreeBSD.  
+ 
+Figura 36. Sesión SSH de Ubuntu hacia FreeBSD y ejecución remota de ifconfig.  
+La segunda captura muestra el saludo de FreeBSD, la sesión freebsd@freebsd y la 
+ejecución de ifconfig. La dirección 2001:db8:1::30/64 aparece en em0. Con ello se 
+comprueba que el cliente controla la consola remota del servidor por el puerto solicitado. 
+ 
+
+
+PAGINA 26
+24 
+ 
+Análisis de resultados 
+Las evidencias confirman el direccionamiento de las tres máquinas y las dos conexiones 
+SSH requeridas desde Ubuntu. Las pruebas ICMPv6 de FreeBSD hacia Fedora y de Ubuntu 
+hacia FreeBSD no registraron pérdida de paquetes en los cuatro envíos de cada ensayo. 
+Las sesiones SSH prueban una función distinta a ping: además de comunicación IP, 
+requieren un servicio en escucha, permiso de acceso y autenticación del usuario. La 
+consulta remota de ifconfig en FreeBSD permite relacionar la sesión con la configuración 
+del equipo destino. 
+Origen Destino Prueba Resultado 
+Ubuntu ::10 Fedora ::20 SSH TCP/3625 Exitoso 
+Ubuntu ::10 FreeBSD ::30 ICMPv6 + SSH TCP/3625 Exitoso 
+FreeBSD ::30 Fedora ::20 ICMPv6 + SSH TCP/3625 Exitoso 
+ 
+La configuración de Fedora incluye una regla del firewall, pero también el uso temporal 
+de SELinux permisivo. Para mantener las protecciones activas, debe revisarse la 
+asociación del puerto con el tipo ssh_port_t y repetirse el acceso con SELinux en Enforcing 
+(Red Hat, 2025). Esta mejora no se presenta como ya ejecutada. 
+getenforce 
+sudo semanage port -l | grep ssh_port_t 
+# Solo si el puerto aún no está registrado 
+sudo semanage port -a -t ssh_port_t -p tcp 3625 
+# Si SELinux está Permissive y la política ya está lista 
+sudo setenforce 1 
+sudo sshd -t 
+sudo systemctl restart sshd 
+Si semanage no está instalado, se requiere policycoreutils -python-utils. Si 3625 ya 
+pertenece a otro tipo, debe revisarse su uso antes de cambiarlo. setenforce 1 no habilita 
+un sistema que tenga SELinux completamente Disabled. También se debe comprobar que 
+la regla TCP 3625 pertenece a la zona de la interfaz del laboratorio. 
+Se recomienda evitar el inicio remoto directo de root, proteger las credenciales y verificar 
+las huellas de los servidores. Cambiar el puerto no sustituye estas medidas.  
+  
+
+PAGINA 27
+25 
+ 
+Conclusiones 
+Fátima Oviedo 
+ 
+ 
+   
+
+
+PAGINA 28
+26 
+ 
+Referencias: 
+• Canonical. (s. f.). OpenSSH server. Ubuntu Server documentation.  
+https://documentation.ubuntu.com/server/how-to/security/openssh-server/ 
+• Hinden, R., & Deering, S. (2006). IP version 6 addressing architecture  (RFC 4291). 
+RFC Editor. https://doi.org/10.17487/RFC4291 
+• Huston, G., Lord, A., & Smith, P. (2004). IPv6 address prefix reserved for 
+documentation (RFC 3849). RFC Editor. https://www.rfc-editor.org/rfc/rfc3849 
+• Oracle. (s. f.).  Virtual networking . Oracle VirtualBox User Guide. 
+https://docs.oracle.com/en/virtualization/virtualbox/7.2/user/networkingdeta
+ils.html 
+• Red Hat, Inc. (s. f.).  Securing networks: Red Hat Enterprise Linux 9 . Red Hat 
+Documentation. 
+https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/9/htmlsi
+ngle/securing_networks/index 
+• The FreeBSD Project. (s. f.). Chapter 16. Security. En FreeBSD handbook . 
+https://docs.freebsd.org/en/books/handbook/security/ 
+ 

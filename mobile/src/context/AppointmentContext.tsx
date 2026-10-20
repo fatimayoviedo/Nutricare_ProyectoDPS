@@ -1,0 +1,8 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { appointments as demoAppointments } from '@/data/demo';
+export interface Appointment { id: string; time: string; name: string; reason?: string; date?: string; }
+const STORAGE_KEY = 'nutricare.mobile.appointments';
+const AppointmentContext = createContext<{ appointments: Appointment[]; addAppointment: (input: Omit<Appointment, 'id'>) => Promise<void> } | undefined>(undefined);
+export function AppointmentProvider({ children }: { children: ReactNode }) { const [appointments, setAppointments] = useState<Appointment[]>(demoAppointments); useEffect(() => { AsyncStorage.getItem(STORAGE_KEY).then((raw) => { if (raw) setAppointments(JSON.parse(raw) as Appointment[]); }).catch(() => undefined); }, []); const addAppointment = useCallback(async (input: Omit<Appointment, 'id'>) => { const next = [...appointments, { ...input, id: `appointment-${Date.now()}` }].sort((a,b) => `${a.date ?? ''}-${a.time}`.localeCompare(`${b.date ?? ''}-${b.time}`)); await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next)); setAppointments(next); }, [appointments]); const value = useMemo(() => ({ appointments, addAppointment }), [appointments, addAppointment]); return <AppointmentContext.Provider value={value}>{children}</AppointmentContext.Provider>; }
+export function useAppointments() { const value = useContext(AppointmentContext); if (!value) throw new Error('useAppointments debe utilizarse dentro de AppointmentProvider.'); return value; }
