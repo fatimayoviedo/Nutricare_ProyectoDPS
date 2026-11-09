@@ -38,3 +38,7 @@ next-env.d.ts
 # Firebase private credentials
 serviceAccountKey.json
 *-firebase-adminsdk-*.json
+
+# Excluir carpetas de documentos y archivos temporales
+/output/
+/tmp/
