@@ -11,24 +11,29 @@ import { useAuth } from '@/context/AuthContext';
 import { usePhotos } from '@/context/PhotoContext';
 import { patientMeals } from '@/data/demo';
 import { monthlyMealsForDay } from '@/data/monthlyPlan';
+import { decode, listMobileRecords, cloudReady } from '@/lib/cloudRecords';
+import { useEffect, useState } from 'react';
 
 function PatientPlan() {
   const router = useRouter();
+  const { user } = useAuth();
   const { photos } = usePhotos();
+  const [cloudPlan, setCloudPlan] = useState<{ title?: string; calorieTarget?: number; objective?: string } | null>(null);
+  useEffect(() => { if (cloudReady() && user) listMobileRecords('plans', user.email).then((records) => { const current = records[0]; if (current) setCloudPlan(decode<{ title?: string; calorieTarget?: number; objective?: string }>(current)); }).catch(() => undefined); }, [user]);
   const todayKey = new Date().toDateString();
-  const completedMeals = patientMeals.filter((_, index) => photos.some((photo) => new Date(photo.createdAt).toDateString() === todayKey && photo.mealType.toLowerCase() === monthlyMealsForDay(Math.min(new Date().getDate(), 31))[index].title.toLowerCase())).length;
+  const completedMeals = patientMeals.filter((_, index) => photos.some((photo) => new Date(photo.createdAt).toDateString() === todayKey && String(photo.mealType ?? '').toLowerCase() === monthlyMealsForDay(Math.min(new Date().getDate(), 31))[index].title.toLowerCase())).length;
   const progress = Math.round((completedMeals / patientMeals.length) * 100);
   const day = Math.min(new Date().getDate(), 31);
   const dayMeals = monthlyMealsForDay(day);
   return (
     <>
       <View style={styles.titleRow}><Text style={styles.title}>Mi plan nutricional</Text><Text style={styles.today}>OCTUBRE 2026</Text></View>
-      <View style={styles.summary}><View><Text style={styles.summaryTitle}>Plan mensual activo</Text><Text style={styles.summaryText}>{completedMeals} de {patientMeals.length} comidas registradas hoy</Text></View><View style={styles.progressTrack}><View style={[styles.progressFill, { width: `${progress}%` }]} /></View><Text style={styles.percent}>{progress}%</Text></View>
+      <View style={styles.summary}><View><Text style={styles.summaryTitle}>{cloudPlan?.title ?? 'Plan mensual activo'}</Text><Text style={styles.summaryText}>{completedMeals} de {patientMeals.length} comidas registradas hoy{cloudPlan?.calorieTarget ? ` · ${cloudPlan.calorieTarget} kcal` : ''}</Text></View><View style={styles.progressTrack}><View style={[styles.progressFill, { width: `${progress}%` }]} /></View><Text style={styles.percent}>{progress}%</Text></View>
       <PrimaryButton label="Ver plan mensual e indicaciones" variant="secondary" onPress={() => router.push('/monthly-plan')} style={styles.monthlyButton} />
       <Text style={styles.dailyTitle}>Menú del {day} de octubre</Text>
       <View style={styles.list}>
         {patientMeals.map((meal, index) => {
-          const hasPhoto = photos.some((photo) => new Date(photo.createdAt).toDateString() === todayKey && photo.mealType.toLowerCase() === dayMeals[index].title.toLowerCase());
+          const hasPhoto = photos.some((photo) => new Date(photo.createdAt).toDateString() === todayKey && String(photo.mealType ?? '').toLowerCase() === dayMeals[index].title.toLowerCase());
           return (
           <SurfaceCard key={meal.id}>
             <View style={styles.mealHeader}><View style={[styles.mealDot, { backgroundColor: meal.color }]} /><View style={styles.mealHeading}><Text style={styles.mealTitle}>{dayMeals[index].title}</Text><Text style={styles.time}>{dayMeals[index].time}</Text></View>{hasPhoto ? <Text onPress={() => router.push('/saved-photos')} style={styles.done}>Ver foto guardada</Text> : <Text onPress={() => router.push('/upload-photo')} style={styles.addPhoto}>+ Agregar foto</Text>}</View>

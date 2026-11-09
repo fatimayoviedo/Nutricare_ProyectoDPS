@@ -30,7 +30,7 @@ export default function PatientsScreen() {
         </SurfaceCard>
         <SurfaceCard style={styles.summaryCard}>
           <View style={styles.summaryHeading}><View style={[styles.summaryIcon, styles.warningIcon]}><SymbolView name={{ ios: 'exclamationmark.triangle.fill', android: 'notification_important', web: 'notification_important' }} size={18} tintColor={colors.warning} /></View><Text style={styles.summaryLabel}>Requieren atención</Text></View>
-          <Text style={styles.summaryValue}>{patients.filter((patient) => patient.status.toLowerCase().includes('revisión') || patient.status.toLowerCase().includes('renovar')).length}</Text>
+          <Text style={styles.summaryValue}>{patients.filter((patient) => String(patient.status ?? '').toLowerCase().includes('revisión') || String(patient.status ?? '').toLowerCase().includes('renovar')).length}</Text>
         </SurfaceCard>
       </View>
 

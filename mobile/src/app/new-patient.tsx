@@ -48,6 +48,7 @@ export default function NewPatientScreen() {
       <View style={styles.form}>
         <Controller control={control} name="name" render={({ field }) => <FormField label="Nombre completo" value={field.value} onBlur={field.onBlur} onChangeText={field.onChange} autoComplete="name" error={errors.name?.message} />} />
         <Controller control={control} name="email" render={({ field }) => <FormField label="Correo electrónico" value={field.value} onBlur={field.onBlur} onChangeText={field.onChange} keyboardType="email-address" autoCapitalize="none" autoComplete="email" error={errors.email?.message} />} />
+        <Text style={styles.accountHelp}>Este correo vincula el expediente con la cuenta del paciente. El paciente debe crear su cuenta con este mismo correo y verificarlo para acceder.</Text>
         <Controller control={control} name="birthDate" render={({ field }) => <BirthDatePicker value={field.value} onChange={field.onChange} error={errors.birthDate?.message} />} />
         <Controller control={control} name="heightCm" render={({ field }) => <FormField label="Estatura (cm)" value={field.value} onBlur={field.onBlur} onChangeText={field.onChange} keyboardType="decimal-pad" placeholder="Ej. 168" error={errors.heightCm?.message} />} />
         <Text style={styles.heightHelp}>Se guarda en el expediente y se reutiliza automáticamente en cada medición.</Text>
@@ -57,7 +58,7 @@ export default function NewPatientScreen() {
         {errors.root?.message ? <Text style={styles.error}>{errors.root.message}</Text> : null}
         <PrimaryButton label="Guardar paciente" onPress={() => void onSubmit()} loading={isSubmitting} />
       </View>
-      <Modal transparent visible={saved} animationType="fade" onRequestClose={() => setSaved(false)}><View style={styles.backdrop}><View style={styles.dialog}><Text style={styles.successIcon}>✓</Text><Text style={styles.dialogTitle}>Paciente registrado</Text><Text style={styles.dialogText}>El expediente fue guardado correctamente y ya aparece en Mis pacientes.</Text><PrimaryButton label="Volver a pacientes" onPress={() => { setSaved(false); router.back(); }} /></View></View></Modal>
+      <Modal transparent visible={saved} animationType="fade" onRequestClose={() => setSaved(false)}><View style={styles.backdrop}><View style={styles.dialog}><Text style={styles.successIcon}>✓</Text><Text style={styles.dialogTitle}>Expediente guardado</Text><Text style={styles.dialogText}>El paciente debe crear su cuenta en NutriCare con este mismo correo y verificarlo. Si ya tiene cuenta, puede usarla.</Text><PrimaryButton label="Volver a pacientes" onPress={() => { setSaved(false); router.back(); }} /></View></View></Modal>
     </Screen>
   );
 }
@@ -68,5 +69,5 @@ const styles = StyleSheet.create({
   options: { flexDirection: 'row', gap: spacing.sm }, option: { flex: 1, alignItems: 'center', paddingVertical: spacing.md, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
   optionActive: { borderColor: colors.primary, backgroundColor: colors.primarySoft }, optionText: { color: colors.inkMuted, fontWeight: '700' }, optionTextActive: { color: colors.primaryDark },
   error: { color: colors.danger, backgroundColor: '#FDEAEA', borderRadius: radius.sm, padding: spacing.md }, backdrop: { flex: 1, backgroundColor: 'rgba(23,53,46,0.48)', justifyContent: 'center', padding: spacing.xl }, dialog: { backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.xl, gap: spacing.md, width: '100%', maxWidth: 430, alignSelf: 'center' }, successIcon: { alignSelf: 'center', width: 54, height: 54, borderRadius: radius.pill, backgroundColor: colors.primarySoft, color: colors.primary, textAlign: 'center', textAlignVertical: 'center', fontSize: 28, fontWeight: '900', overflow: 'hidden' }, dialogTitle: { color: colors.ink, fontSize: 22, fontWeight: '900', textAlign: 'center' }, dialogText: { color: colors.inkMuted, lineHeight: 21, textAlign: 'center' },
-  heightHelp: { color: colors.inkMuted, fontSize: 12, lineHeight: 18, marginTop: -spacing.md },
+  heightHelp: { color: colors.inkMuted, fontSize: 12, lineHeight: 18, marginTop: -spacing.md }, accountHelp: { color: colors.primaryDark, backgroundColor: colors.primarySoft, padding: spacing.md, borderRadius: radius.md, fontSize: 13, lineHeight: 19, marginTop: -spacing.md },
 });

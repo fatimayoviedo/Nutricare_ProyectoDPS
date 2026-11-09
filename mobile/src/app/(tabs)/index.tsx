@@ -14,19 +14,23 @@ import { useAppointments } from '@/context/AppointmentContext';
 import { usePhotos } from '@/context/PhotoContext';
 import { patientMeals } from '@/data/demo';
 import { monthlyMealsForDay } from '@/data/monthlyPlan';
+import { decode, listMobileRecords, saveMobileRecord, cloudReady } from '@/lib/cloudRecords';
 
 function PatientHome() {
   const router = useRouter();
+  const { user, refreshVerification, resendVerification } = useAuth();
+  const [verificationMessage, setVerificationMessage] = useState('');
   const dayMeals = monthlyMealsForDay(Math.min(new Date().getDate(), 31));
   const [completedMeals, setCompletedMeals] = useState<string[]>([]);
   const checklistKey = `nutricare.mobile.daily-checklist.${new Date().toISOString().slice(0, 10)}`;
   const completionRatio = completedMeals.length / patientMeals.length;
   const weeklyProgress = Math.round(((5 + completionRatio) / 7) * 100);
   const trackedDays = completedMeals.length === patientMeals.length ? 6 : 5;
-  useEffect(() => { AsyncStorage.getItem(checklistKey).then((raw) => { if (raw) setCompletedMeals(JSON.parse(raw) as string[]); }).catch(() => undefined); }, [checklistKey]);
-  const toggleMeal = (id: string) => setCompletedMeals((current) => { const next = current.includes(id) ? current.filter((item) => item !== id) : [...current, id]; void AsyncStorage.setItem(checklistKey, JSON.stringify(next)); return next; });
+  useEffect(() => { if (cloudReady() && user) { listMobileRecords('habits', user.email).then((records) => { const today = records.find((record) => decode<{ date: string }>(record).date === checklistKey.slice(-10)); if (today) setCompletedMeals(decode<{ completedMeals: string[] }>(today).completedMeals); }).catch(() => undefined); return; } AsyncStorage.getItem(checklistKey).then((raw) => { if (raw) setCompletedMeals(JSON.parse(raw) as string[]); }).catch(() => undefined); }, [checklistKey, user]);
+  const toggleMeal = (id: string) => setCompletedMeals((current) => { const next = current.includes(id) ? current.filter((item) => item !== id) : [...current, id]; if (cloudReady()) void saveMobileRecord('habits', { date: checklistKey.slice(-10), completedMeals: next }); else void AsyncStorage.setItem(checklistKey, JSON.stringify(next)); return next; });
   return (
     <>
+      {user?.emailVerified === false ? <SurfaceCard style={styles.verificationCard}><Text style={styles.cardTitle}>Verifica tu correo</Text><Text style={styles.heroTextDark}>Abre el enlace enviado a {user.email}. Luego vuelve aquí para actualizar tu acceso al expediente.</Text><PrimaryButton label="Ya verifiqué mi correo" onPress={() => void refreshVerification().then((verified) => setVerificationMessage(verified ? 'Correo verificado.' : 'Aún no se ha verificado el correo.')).catch(() => setVerificationMessage('No fue posible comprobar el correo. Inténtalo nuevamente.'))} /><PrimaryButton label="Reenviar correo" variant="secondary" onPress={() => void resendVerification().then(() => setVerificationMessage('Correo de verificación enviado.')).catch(() => setVerificationMessage('No fue posible enviar el correo. Inténtalo más tarde.'))} />{verificationMessage ? <Text style={styles.heroTextDark}>{verificationMessage}</Text> : null}</SurfaceCard> : null}
       <Text style={styles.title}>¡Hola, Gerardo!</Text>
       <View style={styles.hero}>
         <Text style={styles.heroTitle}>{trackedDays} días siguiendo tu plan</Text>
@@ -45,6 +49,7 @@ function PatientHome() {
     </>
   );
 }
+
 
 function NutritionistHome() {
   const router = useRouter();
@@ -79,6 +84,7 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
+  verificationCard: { gap: spacing.md, marginBottom: spacing.lg }, heroTextDark: { color: colors.inkMuted, lineHeight: 20 },
   title: { color: colors.ink, fontSize: 31, fontWeight: '900', letterSpacing: -1, marginBottom: spacing.lg },
   hero: { backgroundColor: colors.primary, borderRadius: radius.lg, padding: spacing.xl, marginBottom: spacing.lg }, heroTitle: { color: colors.surface, fontSize: 21, fontWeight: '900' },
   heroText: { color: '#D9F3EA', marginTop: spacing.sm }, goalPill: { alignSelf: 'flex-start', backgroundColor: colors.lime, borderRadius: radius.pill, paddingVertical: 9, paddingHorizontal: 18, marginTop: spacing.lg }, goalText: { color: colors.primaryDark, fontWeight: '900' },

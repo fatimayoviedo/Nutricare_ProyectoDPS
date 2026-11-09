@@ -2,6 +2,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 
 import type { NewOfficeMeasurement, OfficeMeasurement } from '@/types/measurement';
+import { decode, listMobileRecords, saveMobileRecord, cloudReady } from '@/lib/cloudRecords';
+import { useAuth } from '@/context/AuthContext';
 
 const STORAGE_KEY = 'nutricare.mobile.office-measurements';
 
@@ -14,15 +16,22 @@ interface MeasurementContextValue {
 const MeasurementContext = createContext<MeasurementContextValue | undefined>(undefined);
 
 export function MeasurementProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
   const [measurements, setMeasurements] = useState<OfficeMeasurement[]>([]);
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
+    if (cloudReady() && user) {
+      listMobileRecords('measurements', user.role === 'patient' ? user.email : undefined)
+        .then((records) => setMeasurements(records.map((record) => decode<OfficeMeasurement>(record))))
+        .catch(() => setMeasurements([])).finally(() => setIsReady(true));
+      return;
+    }
     AsyncStorage.getItem(STORAGE_KEY)
       .then((raw) => setMeasurements(raw ? JSON.parse(raw) as OfficeMeasurement[] : []))
       .catch(() => setMeasurements([]))
       .finally(() => setIsReady(true));
-  }, []);
+  }, [user]);
 
   const addMeasurement = useCallback(async (input: NewOfficeMeasurement) => {
     const heightMeters = input.heightCm / 100;
@@ -31,6 +40,7 @@ export function MeasurementProvider({ children }: { children: ReactNode }) {
       id: `measurement-${Date.now()}`,
       bmi: Math.round((input.weightKg / (heightMeters * heightMeters)) * 10) / 10,
     };
+    if (cloudReady()) { const record = await saveMobileRecord('measurements', measurement as unknown as Record<string, unknown>); const saved = decode<OfficeMeasurement>(record); setMeasurements((current) => [saved, ...current]); return saved; }
     const next = [...measurements, measurement];
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next));
     setMeasurements(next);

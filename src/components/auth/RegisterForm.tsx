@@ -46,7 +46,7 @@ export function RegisterForm() {
       <p className="text-sm font-bold text-[var(--primary)]">Comienza tu experiencia</p>
       <h1 className="mt-2 text-3xl font-extrabold tracking-[-0.04em]">Crear cuenta</h1>
       <p className="mt-3 text-sm leading-6 text-[var(--ink-muted)]">Selecciona el perfil que usarás dentro de NutriCare.</p>
-      <form onSubmit={onSubmit} className="mt-7 grid gap-4" noValidate>
+      <form method="post" onSubmit={onSubmit} className="mt-7 grid gap-4" noValidate>
         {submitError ? <Alert tone="error">{submitError}</Alert> : null}
         <Input label="Nombre completo" autoComplete="name" error={errors.name?.message} {...register("name")} />
         <Input label="Correo electrónico" type="email" autoComplete="email" error={errors.email?.message} {...register("email")} />

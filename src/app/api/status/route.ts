@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
 
 export function GET() {
-  return NextResponse.json({ service: "NutriCare API", status: "ok", phase: 2, dataMode: "mock-rest" });
+  return NextResponse.json({ service: "NutriCare Web", status: "ok", dataMode: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ? "firestore" : "demo" });
 }

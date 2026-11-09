@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { useAuth } from "@/hooks/useAuth";
+import { preferenceService } from '@/services/preferenceService';
+import Link from 'next/link';
 import { patientService } from "@/services/patientService";
 import type { Patient } from "@/types";
 import { calculateAge } from "@/utils/calculateAge";
@@ -17,7 +19,6 @@ import { getErrorMessage } from "@/utils/errorHandler";
 type Section = "personal" | "notifications" | "security" | null;
 type NotificationPreferences = { meals: boolean; water: boolean; appointments: boolean; consultations: boolean; mealPhotos: boolean; planReviews: boolean };
 
-const PREFERENCES_KEY = "nutricare_notification_preferences";
 const defaultPreferences: NotificationPreferences = { meals: true, water: true, appointments: true, consultations: true, mealPhotos: true, planReviews: true };
 
 const sections = [
@@ -40,10 +41,9 @@ function PreferenceToggle({ label, description, checked, onChange }: { label: st
 export default function ProfilePage() {
   const { user, updateProfile, changePassword } = useAuth();
   const isNutritionist = user?.role === "nutritionist";
-  const preferencesStorageKey = isNutritionist ? `${PREFERENCES_KEY}_nutritionist` : PREFERENCES_KEY;
   const [activeSection, setActiveSection] = useState<Section>(null);
-  const [name, setName] = useState(user?.name ?? "Gerardo Peña");
-  const [email, setEmail] = useState(user?.email ?? "paciente@nutricare.com");
+  const [name, setName] = useState(user?.name ?? "");
+  const [email, setEmail] = useState(user?.email ?? "");
   const [preferences, setPreferences] = useState<NotificationPreferences>(defaultPreferences);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -57,17 +57,12 @@ export default function ProfilePage() {
   const initials = displayName.split(" ").filter((part) => part && !/^(dra|dr|licda|lic)\.?$/i.test(part)).map((part) => part[0]).join("").slice(0, 2).toUpperCase();
 
   useEffect(() => {
-    const stored = window.localStorage.getItem(preferencesStorageKey);
-    window.queueMicrotask(() => {
-      if (!stored) { setPreferences(defaultPreferences); return; }
-      try { setPreferences({ ...defaultPreferences, ...JSON.parse(stored) as NotificationPreferences }); }
-      catch { setPreferences(defaultPreferences); }
-    });
-  }, [preferencesStorageKey]);
+    preferenceService.get().then(value => setPreferences(value.preferences)).catch(cause => setError(getErrorMessage(cause)));
+  }, []);
 
   useEffect(() => {
     if (user?.role !== "patient") return;
-    patientService.get(user.id).then(setClinicalProfile).catch(() => setClinicalProfile(null));
+    patientService.list().then(items => setClinicalProfile(items[0] ?? null)).catch(() => setClinicalProfile(null));
   }, [user]);
 
   function openSection(section: Section) {
@@ -82,17 +77,15 @@ export default function ProfilePage() {
     setSaving(true); setMessage(null); setError(null);
     try {
       await updateProfile(name, email);
-      setMessage("Tus datos personales se actualizaron correctamente.");
+      setMessage(email.trim().toLowerCase() !== user?.email.toLowerCase() ? 'Nombre guardado. Revisa el nuevo correo para confirmar el cambio de dirección; después inicia sesión de nuevo.' : 'Tus datos personales se actualizaron correctamente.');
     } catch (cause) { setError(getErrorMessage(cause)); }
     finally { setSaving(false); }
   }
 
-  function savePreferences(event: FormEvent) {
-    event.preventDefault();
-    window.localStorage.setItem(preferencesStorageKey, JSON.stringify(preferences));
-    window.dispatchEvent(new Event("nutricare-notification-preferences-change"));
-    setError(null);
-    setMessage("Tus preferencias de notificaciones quedaron guardadas.");
+  async function savePreferences(event: FormEvent) {
+    event.preventDefault();setSaving(true);setError(null);
+    try {await preferenceService.save({preferences}); window.dispatchEvent(new Event('nutricare-notification-preferences-change'));setMessage('Preferencias guardadas en tu cuenta.');}
+    catch(cause) {setError(getErrorMessage(cause));} finally {setSaving(false);}
   }
 
   async function savePassword(event: FormEvent) {
@@ -110,7 +103,7 @@ export default function ProfilePage() {
 
   return (
     <>
-      <PageHeader title="Mi perfil" description="Información de cuenta, rol y preferencias." />
+      <PageHeader title="Mi perfil" description="Información de cuenta, rol y preferencias." action={<Link href="/historial" className="font-bold text-[var(--primary)]">Historial de registros</Link>} />
       <div className="grid gap-6 xl:grid-cols-[0.45fr_1fr]">
         <Card className="h-fit text-center"><span className="mx-auto grid size-24 place-items-center rounded-full bg-[var(--lime)] text-2xl font-extrabold">{initials}</span><h2 className="mt-5 text-xl font-bold">{displayName}</h2><p className="mt-1 text-sm text-[var(--ink-muted)]">{user ? ROLE_LABELS[user.role] : "Paciente"}</p><span className="mt-4 inline-flex rounded-full bg-[var(--soft-green)] px-3 py-1 text-xs font-bold text-[var(--primary)]">Cuenta activa</span>{clinicalProfile ? <div className="mt-6 grid grid-cols-2 gap-3 border-t border-[var(--border)] pt-5 text-left"><div><p className="text-xs text-[var(--ink-muted)]">Edad calculada</p><p className="mt-1 font-bold">{calculateAge(clinicalProfile.dateOfBirth)} años</p></div><div><p className="text-xs text-[var(--ink-muted)]">Sexo</p><p className="mt-1 font-bold">{clinicalProfile.sex === "female" ? "Mujer" : "Hombre"}</p></div></div> : null}</Card>
         <Card>

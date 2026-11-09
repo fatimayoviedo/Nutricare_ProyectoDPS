@@ -9,6 +9,7 @@ import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { patientSchema, type PatientFormValues } from "@/schemas/patientSchema";
 import { patientService } from "@/services/patientService";
 import { getErrorMessage } from "@/utils/errorHandler";
@@ -16,9 +17,10 @@ import { getErrorMessage } from "@/utils/errorHandler";
 export function PatientForm({ patientId }: { patientId?: string }) {
   const router = useRouter();
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
   const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<PatientFormValues>({
     resolver: zodResolver(patientSchema),
-    defaultValues: { status: "active", name: "", email: "", dateOfBirth: "", sex: "male", heightCm: 168, objective: "", nextConsultation: "" },
+    defaultValues: { status: "active", name: "", email: "", dateOfBirth: "", sex: "male", heightCm: undefined, objective: "", nextConsultation: "" },
   });
 
   useEffect(() => {
@@ -33,8 +35,7 @@ export function PatientForm({ patientId }: { patientId?: string }) {
     try {
       if (patientId) await patientService.update(patientId, values);
       else await patientService.create(values);
-      router.push("/pacientes");
-      router.refresh();
+      setSaved(true);
     } catch (error) {
       setLoadError(getErrorMessage(error));
     }
@@ -44,14 +45,15 @@ export function PatientForm({ patientId }: { patientId?: string }) {
     <form onSubmit={onSubmit} className="grid gap-5 sm:grid-cols-2" noValidate>
       {loadError ? <div className="sm:col-span-2"><Alert tone="error">{loadError}</Alert></div> : null}
       <Input label="Nombre completo" error={errors.name?.message} {...register("name")} />
-      <Input label="Correo electrónico" type="email" error={errors.email?.message} {...register("email")} />
+      <Input label="Correo electrónico" readOnly={Boolean(patientId)} type="email" error={errors.email?.message} {...register("email")} />
       <Input label="Fecha de nacimiento" type="date" error={errors.dateOfBirth?.message} {...register("dateOfBirth")} />
       <Select label="Sexo" error={errors.sex?.message} {...register("sex")}><option value="female">Mujer</option><option value="male">Hombre</option></Select>
       <Input label="Estatura (cm)" type="number" step="0.1" error={errors.heightCm?.message} {...register("heightCm", { valueAsNumber: true })} />
       <Input label="Objetivo principal" error={errors.objective?.message} {...register("objective")} />
       <Select label="Estado" error={errors.status?.message} {...register("status")}><option value="active">Activo</option><option value="inactive">Inactivo</option></Select>
-      <Input label="Próxima consulta" type="datetime-local" error={errors.nextConsultation?.message} {...register("nextConsultation")} />
+      <p className="text-sm text-[var(--ink-muted)]">El correo vincula este expediente con la cuenta verificada del paciente. Programa las citas desde Consultas.</p>
       <div className="sm:col-span-2"><Button type="submit" disabled={isSubmitting}><Save className="size-4" /> {isSubmitting ? "Guardando..." : patientId ? "Guardar cambios" : "Crear paciente"}</Button></div>
+      <ConfirmDialog open={saved} title="Paciente guardado" description="El expediente quedó guardado correctamente." confirmLabel="Ver pacientes" tone="success" onConfirm={() => { router.push('/pacientes'); router.refresh(); }} />
     </form>
   );
 }

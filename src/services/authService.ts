@@ -1,11 +1,16 @@
 import {
   createUserWithEmailAndPassword,
+  GoogleAuthProvider,
+  EmailAuthProvider,
+  reauthenticateWithCredential,
+  sendEmailVerification,
   getAuth,
   onAuthStateChanged,
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
+  signInWithPopup,
   signOut,
-  updateEmail,
+  verifyBeforeUpdateEmail,
   updatePassword,
   updateProfile as updateFirebaseProfile,
   type Auth,
@@ -99,9 +104,21 @@ function requireAuth(): Auth {
   return auth;
 }
 
+async function withTimeout<T>(operation: Promise<T>, message: string): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      operation,
+      new Promise<never>((_, reject) => { timer = setTimeout(() => reject(new Error(message)), 12000); }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
 async function toProfile(user: User): Promise<UserProfile> {
   if (firestore) {
-    const snapshot = await getDoc(doc(firestore, "users", user.uid));
+    const snapshot = await withTimeout(getDoc(doc(firestore, "users", user.uid)), "No se pudo consultar el perfil. Revisa la conexión con Firestore y vuelve a intentarlo.");
     if (snapshot.exists()) {
       const data = snapshot.data() as { name?: string; role?: UserRole };
       return {
@@ -123,6 +140,35 @@ async function toProfile(user: User): Promise<UserProfile> {
 }
 
 export const authService = {
+  async sendVerification(): Promise<void> {
+    const user = requireAuth().currentUser;
+    if (!user) throw new Error('Inicia sesión primero.');
+    await sendEmailVerification(user);
+  },
+  async refreshVerification(): Promise<void> {
+    const user = requireAuth().currentUser;
+    if (!user) throw new Error('Inicia sesión primero.');
+    await user.reload();
+    await user.getIdToken(true);
+    if (!user.emailVerified) throw new Error('Abre primero el enlace de verificación enviado a tu correo.');
+  },
+  async loginWithGoogle(): Promise<UserProfile> {
+    const credential = await signInWithPopup(requireAuth(), new GoogleAuthProvider());
+    if (!firestore) throw new Error("Firestore no está configurado.");
+    const ref = doc(firestore, "users", credential.user.uid);
+    const snapshot = await withTimeout(getDoc(ref), "No se pudo consultar el perfil en Firestore.");
+    if (!snapshot.exists()) {
+      const profile: UserProfile = {
+        id: credential.user.uid,
+        name: credential.user.displayName || "Usuario",
+        email: credential.user.email || "",
+        role: "patient",
+      };
+      await withTimeout(setDoc(ref, profile), "No se pudo guardar el perfil en Firestore.");
+      return profile;
+    }
+    return toProfile(credential.user);
+  },
   async login(email: string, password: string): Promise<UserProfile> {
     if (!isFirebaseConfigured) {
       const account = readLocalAccounts().find(
@@ -132,7 +178,7 @@ export const authService = {
       saveLocalSession(account.profile);
       return account.profile;
     }
-    const credential = await signInWithEmailAndPassword(requireAuth(), email, password);
+    const credential = await withTimeout(signInWithEmailAndPassword(requireAuth(), email, password), 'No se pudo confirmar el inicio de sesión. Revisa tu conexión.');
     return toProfile(credential.user);
   },
 
@@ -153,18 +199,25 @@ export const authService = {
       saveLocalSession(profile);
       return profile;
     }
-    const credential = await createUserWithEmailAndPassword(
+    const credential = await withTimeout(createUserWithEmailAndPassword(
       requireAuth(),
       input.email,
       input.password,
-    );
+    ), 'No se confirmó el registro. Revisa tu conexión e intenta iniciar sesión antes de registrarte nuevamente.');
+    await updateFirebaseProfile(credential.user, {displayName:input.name.trim()});
     const profile: UserProfile = {
       id: credential.user.uid,
       name: input.name,
       email: input.email,
       role: input.role,
     };
-    if (firestore) await setDoc(doc(firestore, "users", profile.id), profile);
+    if (firestore) {
+      try {
+        await withTimeout(setDoc(doc(firestore, "users", profile.id), profile), "No se pudo guardar el perfil en Firestore.");
+      } catch {
+        throw new Error("La cuenta se creó, pero no se confirmó el guardado del perfil. No vuelvas a registrarte; revisa Firestore e inicia sesión con este correo.");
+      }
+    }
     return profile;
   },
 
@@ -208,10 +261,10 @@ export const authService = {
     const currentUser = requireAuth().currentUser;
     if (!currentUser) throw new Error("No hay una sesión activa.");
     await updateFirebaseProfile(currentUser, { displayName: cleanName });
-    if (currentUser.email !== cleanEmail) await updateEmail(currentUser, cleanEmail);
+    if (currentUser.email !== cleanEmail) await verifyBeforeUpdateEmail(currentUser, cleanEmail);
     const profile = await toProfile(currentUser);
-    if (firestore) await setDoc(doc(firestore, "users", profile.id), { name: cleanName, email: cleanEmail }, { merge: true });
-    return { ...profile, name: cleanName, email: cleanEmail };
+    if (firestore) await withTimeout(setDoc(doc(firestore, "users", profile.id), { name: cleanName, email: currentUser.email }, { merge: true }), 'No se pudo confirmar el cambio de perfil. Revisa la conexión.');
+    return { ...profile, name: cleanName, email: currentUser.email ?? profile.email };
   },
 
   async changePassword(currentPassword: string, newPassword: string): Promise<void> {
@@ -228,6 +281,9 @@ export const authService = {
     }
     const currentUser = requireAuth().currentUser;
     if (!currentUser) throw new Error("No hay una sesión activa.");
+    if (!currentUser.email) throw new Error('La cuenta no tiene correo electrónico.');
+    if (!currentUser.providerData.some(provider => provider.providerId === 'password')) throw new Error('Esta cuenta usa Google. Puedes usar Recuperar acceso para establecer una contraseña.');
+    await reauthenticateWithCredential(currentUser, EmailAuthProvider.credential(currentUser.email, currentPassword));
     await updatePassword(currentUser, newPassword);
   },
 
@@ -243,7 +299,8 @@ export const authService = {
       };
     }
     return onAuthStateChanged(auth, async (user) => {
-      callback(user ? await toProfile(user) : null);
+      try { callback(user ? await toProfile(user) : null); }
+      catch { callback(null); }
     });
   },
 };

@@ -1,6 +1,9 @@
 import type { ApiFailure, ApiSuccess } from "@/types";
+import { isFirebaseConfigured } from '@/lib/firebase/firebase';
+import { cloudApiRequest } from './cloudRecords';
 
 export async function apiRequest<T>(path: string, options?: RequestInit): Promise<T> {
+  if (isFirebaseConfigured && /^\/api\/(patients|measurements|consultations|plans)(\/|\?|$)/.test(path)) return cloudApiRequest<T>(path, options);
   let response: Response;
   try {
     response = await fetch(path, {

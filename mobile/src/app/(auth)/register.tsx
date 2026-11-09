@@ -26,7 +26,7 @@ export default function RegisterScreen() {
     <Screen>
       <BrandHeader />
       <Text style={styles.title}>Crea tu cuenta</Text>
-      <Text style={styles.subtitle}>Completa tus datos para comenzar tu seguimiento.</Text>
+      <Text style={styles.subtitle}>Si eres paciente, utiliza el mismo correo que proporcionaste a tu nutricionista. Después verifica el correo que recibirás.</Text>
       <View style={styles.form}>
         <Controller control={control} name="name" render={({ field }) => <FormField label="Nombre completo" value={field.value} onBlur={field.onBlur} onChangeText={field.onChange} autoComplete="name" error={errors.name?.message} />} />
         <Controller control={control} name="email" render={({ field }) => <FormField label="Correo electrónico" value={field.value} onBlur={field.onBlur} onChangeText={field.onChange} keyboardType="email-address" autoCapitalize="none" autoComplete="email" error={errors.email?.message} />} />

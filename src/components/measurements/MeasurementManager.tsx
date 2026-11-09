@@ -20,6 +20,7 @@ import { patientService } from "@/services/patientService";
 import type { Measurement, Patient } from "@/types";
 import { calculateAge } from "@/utils/calculateAge";
 import { getErrorMessage } from "@/utils/errorHandler";
+import { localDate } from '@/utils/localDate';
 
 const numberOrUndefined = (value: string) => value === "" ? undefined : Number(value);
 
@@ -28,11 +29,7 @@ export function MeasurementManager() {
   const isNutritionist = user?.role === "nutritionist";
   const [measurements, setMeasurements] = useState<Measurement[]>([]);
   const [patients, setPatients] = useState<Patient[]>([]);
-  const [selectedPatientId, setSelectedPatientId] = useState(() => {
-    if (typeof window === "undefined") return "all";
-    try { return JSON.parse(window.localStorage.getItem("nutricare_session") ?? "null")?.role === "patient" ? "gerardo-pena" : "all"; }
-    catch { return "all"; }
-  });
+  const [selectedPatientId, setSelectedPatientId] = useState("all");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
@@ -40,8 +37,8 @@ export function MeasurementManager() {
   const { register, handleSubmit, reset, control, setValue, formState: { errors, isSubmitting } } = useForm<MeasurementFormValues>({
     resolver: zodResolver(measurementSchema),
     defaultValues: {
-      patientId: "gerardo-pena", date: new Date().toISOString().slice(0, 10), measurementMode: "office",
-      weightKg: 68.4, heightCm: 168, bodyFatPercentage: 23.8, muscleMassPercentage: 37.2, metabolicAge: 30,
+      patientId: "", date: localDate(), measurementMode: "office",
+      heightCm: undefined,
       additionalMeasurements: [],
     },
   });
@@ -74,7 +71,7 @@ export function MeasurementManager() {
     }
   }, [measurementMode, setValue]);
 
-  const effectivePatientId = isNutritionist ? selectedPatientId : "gerardo-pena";
+  const effectivePatientId = selectedPatientId;
   const filteredMeasurements = useMemo(() => effectivePatientId === "all" ? measurements : measurements.filter((item) => item.patientId === effectivePatientId), [effectivePatientId, measurements]);
   const latest = useMemo(() => filteredMeasurements.toSorted((a, b) => b.date.localeCompare(a.date))[0], [filteredMeasurements]);
   const patientsWithMeasurements = new Set(measurements.map((item) => item.patientId)).size;
@@ -86,7 +83,7 @@ export function MeasurementManager() {
     try {
       const created = await measurementService.create(values);
       setMeasurements((current) => [created, ...current]);
-      reset({ patientId: values.patientId, date: new Date().toISOString().slice(0, 10), measurementMode: values.measurementMode, weightKg: created.weightKg, heightCm: created.heightCm, additionalMeasurements: [] });
+      reset({ patientId: values.patientId, date: localDate(), measurementMode: values.measurementMode, weightKg: created.weightKg, heightCm: created.heightCm, additionalMeasurements: [] });
       setShowForm(false);
     } catch (cause) { setError(getErrorMessage(cause)); }
   });

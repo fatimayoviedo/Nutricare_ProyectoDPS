@@ -2,6 +2,7 @@
 Proyecto DPS  NutriCare - Fátima Oviedo
 
 ## Accesos de demostración
+Con Firebase configurado se utilizan cuentas reales creadas en **Crear cuenta** o el botón **Continuar con Google**. Los accesos de la tabla solo corresponden al modo local sin Firebase.
 | Rol | Correo | Contraseña |
 | --- | --- | --- |
 | Nutricionista | `nutricionista@nutricare.com` | `nutricare2026` |
@@ -15,6 +16,8 @@ pnpm dev
 ```
 
 Abrir `http://localhost:3000`.
+
+La guía de configuración, los módulos conectados a Firestore, el arranque estable y las pruebas están en [docs/WEB-FIREBASE.md](docs/WEB-FIREBASE.md).
 
 ## Ejecución de la versión móvil
 

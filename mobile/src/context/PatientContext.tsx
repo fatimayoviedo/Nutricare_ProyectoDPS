@@ -3,6 +3,8 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 
 import { initialPatients } from '@/data/demo';
 import type { NewPatientPayload, PatientRecord } from '@/types/patient';
+import { decode, listMobileRecords, saveMobileRecord, cloudReady } from '@/lib/cloudRecords';
+import { useAuth } from '@/context/AuthContext';
 
 const PATIENTS_KEY = 'nutricare.mobile.patients';
 
@@ -16,10 +18,17 @@ interface PatientContextValue {
 const PatientContext = createContext<PatientContextValue | undefined>(undefined);
 
 export function PatientProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
   const [patients, setPatients] = useState<PatientRecord[]>(initialPatients);
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
+    if (cloudReady() && user) {
+      listMobileRecords('patients', user.role === 'patient' ? user.email : undefined)
+        .then((records) => setPatients(records.map((record) => decode<PatientRecord>(record))))
+        .catch(() => setPatients([])).finally(() => setIsReady(true));
+      return;
+    }
     AsyncStorage.getItem(PATIENTS_KEY)
       .then((raw) => {
         if (!raw) { setPatients(initialPatients); return; }
@@ -31,9 +40,10 @@ export function PatientProvider({ children }: { children: ReactNode }) {
       })
       .catch(() => setPatients(initialPatients))
       .finally(() => setIsReady(true));
-  }, []);
+  }, [user]);
 
   const addPatient = useCallback(async (payload: NewPatientPayload) => {
+    if (cloudReady()) { const record = await saveMobileRecord('patients', payload as unknown as Record<string, unknown>); setPatients((current) => [...current, decode<PatientRecord>(record)]); return; }
     if (patients.some((patient) => patient.email.toLowerCase() === payload.email.toLowerCase())) {
       throw new Error('Ya existe un paciente con este correo electrónico.');
     }
@@ -43,6 +53,7 @@ export function PatientProvider({ children }: { children: ReactNode }) {
   }, [patients]);
 
   const setPatientHeight = useCallback(async (patientId: string, heightCm: number) => {
+    if (cloudReady()) { const current = patients.find((patient) => patient.id === patientId); if (current) await saveMobileRecord('patients', { ...current, heightCm }, patientId); setPatients((current) => current.map((patient) => patient.id === patientId ? { ...patient, heightCm } : patient)); return; }
     const next = patients.map((patient) => patient.id === patientId ? { ...patient, heightCm } : patient);
     await AsyncStorage.setItem(PATIENTS_KEY, JSON.stringify(next));
     setPatients(next);

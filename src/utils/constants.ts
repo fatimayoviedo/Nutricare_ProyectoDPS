@@ -13,4 +13,5 @@ export const DASHBOARD_LINKS = [
   { href: "/progreso", label: "Progreso", icon: "chart", roles: ["nutritionist", "patient"] },
   { href: "/comidas", label: "Comidas", icon: "utensils", roles: ["patient"] },
   { href: "/perfil", label: "Perfil", icon: "user", roles: ["nutritionist", "patient"] },
+  { href: "/historial", label: "Historial", icon: "clipboard", roles: ["nutritionist", "patient"] },
 ] as const;

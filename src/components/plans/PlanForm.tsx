@@ -16,12 +16,12 @@ import { planService } from "@/services/planService";
 import type { NutritionPlan, Patient } from "@/types";
 import { getErrorMessage } from "@/utils/errorHandler";
 
-const MAX_FILE_SIZE = 5 * 1024 * 1024;
+const MAX_FILE_SIZE = 500 * 1024;
 const fieldClass = "min-h-28 rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm font-normal leading-6 outline-none transition focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary-ring)]";
 const monthFormatter = new Intl.DateTimeFormat("es-SV", { month: "long", year: "numeric" });
 
 const planMonths = Array.from({ length: 12 }, (_, index) => {
-  const date = new Date(2026, 8 + index, 1, 12);
+  const date = new Date(new Date().getFullYear(), new Date().getMonth() + index, 1, 12);
   return { value: `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`, label: monthFormatter.format(date).replace(/^./, (letter) => letter.toUpperCase()) };
 });
 
@@ -46,9 +46,11 @@ function readFileAsDataUrl(file: File) {
   });
 }
 
-export function PlanForm() {
+export function PlanForm({planId}: {planId?:string}) {
   const router = useRouter();
   const { user, loading } = useAuth();
+  const [existingPlan, setExistingPlan] = useState<NutritionPlan | null>(null);
+  const [formLoading, setFormLoading] = useState(Boolean(planId));
   const [patients, setPatients] = useState<Patient[]>([]);
   const [plans, setPlans] = useState<NutritionPlan[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -58,13 +60,13 @@ export function PlanForm() {
   const [supplements, setSupplements] = useState("");
   const [medicalExams, setMedicalExams] = useState("");
   const [exerciseRecommendations, setExerciseRecommendations] = useState("");
-  const { register, handleSubmit, control, setValue, formState: { errors, isSubmitting } } = useForm<PlanFormValues>({
+  const { register, handleSubmit, control, setValue, reset, formState: { errors, isSubmitting } } = useForm<PlanFormValues>({
     resolver: zodResolver(planSchema),
-    defaultValues: { patientId: "", planMonth: "", title: "Plan equilibrado · 1,750 kcal", objective: "Mejorar hábitos de forma sostenible", active: true, meals: exampleMeals },
+    defaultValues: { patientId: "", planMonth: "", title: "Plan nutricional", objective: "Mejorar hábitos de forma sostenible", active: true, meals: exampleMeals },
   });
   const { fields, append, remove } = useFieldArray({ control, name: "meals" });
   const selectedPatientId = useWatch({ control, name: "patientId" });
-  const availableMonths = planMonths.filter((month) => !plans.some((plan) => plan.patientId === selectedPatientId && plan.planMonth === month.value));
+  const availableMonths = existingPlan ? [{value:existingPlan.planMonth,label:existingPlan.planMonth}] : planMonths.filter((month) => !plans.some((plan) => plan.patientId === selectedPatientId && plan.planMonth === month.value));
 
   useEffect(() => {
     if (user?.role !== "nutritionist") return;
@@ -72,20 +74,31 @@ export function PlanForm() {
   }, [user?.role]);
 
   useEffect(() => {
-    setValue("planMonth", "");
-  }, [selectedPatientId, setValue]);
+    if (!planId) return;
+    planService.get(planId).then(plan => {
+      setExistingPlan(plan); reset(plan);
+      setClinicalNotes(plan.clinicalGuidance?.clinicalNotes.join('\n') ?? '');
+      setRecommendations(plan.clinicalGuidance?.recommendations.join('\n') ?? '');
+      setSupplements(plan.clinicalGuidance?.supplements.join('\n') ?? '');
+      setMedicalExams(plan.clinicalGuidance?.medicalExams.join('\n') ?? '');
+      setExerciseRecommendations(plan.clinicalGuidance?.exerciseRecommendations?.join('\n') ?? '');
+    }).catch(cause => setError(getErrorMessage(cause))).finally(()=>setFormLoading(false));
+  }, [planId, reset]);
+  useEffect(() => {if(!planId) setValue('planMonth','');}, [planId, selectedPatientId, setValue]);
 
   const onSubmit = handleSubmit(async (values) => {
     setError(null);
     try {
-      const attachment = selectedFile ? { name: selectedFile.name, mimeType: selectedFile.type || "application/octet-stream", sizeBytes: selectedFile.size, dataUrl: await readFileAsDataUrl(selectedFile) } : undefined;
-      await planService.create({
+      const attachment = selectedFile ? { name: selectedFile.name, mimeType: selectedFile.type || "application/octet-stream", sizeBytes: selectedFile.size, dataUrl: await readFileAsDataUrl(selectedFile) } : existingPlan?.attachment;
+      const valuesToSave = {
         ...values,
         clinicalGuidance: {
           clinicalNotes: linesToList(clinicalNotes), recommendations: linesToList(recommendations), supplements: linesToList(supplements), medicalExams: linesToList(medicalExams), exerciseRecommendations: linesToList(exerciseRecommendations),
         },
         attachment,
-      });
+      };
+      if(planId) await planService.update(planId, valuesToSave);
+      else await planService.create(valuesToSave);
       router.push("/planes");
       router.refresh();
     } catch (cause) { setError(getErrorMessage(cause)); }
@@ -96,11 +109,11 @@ export function PlanForm() {
     if (!file) return;
     const extension = file.name.split(".").pop()?.toLowerCase();
     if (!extension || !["pdf", "doc", "docx"].includes(extension)) { setError("El archivo del plan debe ser PDF, DOC o DOCX."); return; }
-    if (file.size > MAX_FILE_SIZE) { setError("El archivo del plan no puede superar 5 MB."); return; }
+    if (file.size > MAX_FILE_SIZE) { setError("El archivo del plan no puede superar 500 KB."); return; }
     setSelectedFile(file);
   }
 
-  if (loading) return <p className="py-8 text-center text-sm text-[var(--ink-muted)]">Cargando formulario...</p>;
+  if (loading || formLoading) return <p className="py-8 text-center text-sm text-[var(--ink-muted)]">Cargando formulario...</p>;
   if (user?.role !== "nutritionist") return <Alert tone="error">Solo la nutricionista puede crear y asignar planes.</Alert>;
 
   return (
@@ -109,8 +122,8 @@ export function PlanForm() {
       <section className="grid gap-5">
         <div><h2 className="text-lg font-bold">Datos generales</h2><p className="mt-1 text-sm text-[var(--ink-muted)]">Asigna el plan y define su objetivo principal.</p></div>
         <div className="grid gap-5 lg:grid-cols-2">
-          <Select label="Paciente" error={errors.patientId?.message} {...register("patientId")}><option value="">Selecciona un paciente</option>{patients.map((patient) => <option key={patient.id} value={patient.id}>{patient.name}</option>)}</Select>
-          <Select label="Mes asignado" error={errors.planMonth?.message} disabled={!selectedPatientId} {...register("planMonth")}><option value="">{selectedPatientId ? "Selecciona un mes disponible" : "Primero selecciona un paciente"}</option>{availableMonths.map((month) => <option key={month.value} value={month.value}>{month.label}</option>)}</Select>
+          <Select label="Paciente" disabled={Boolean(planId)} error={errors.patientId?.message} {...register("patientId")}><option value="">Selecciona un paciente</option>{patients.map((patient) => <option key={patient.id} value={patient.id}>{patient.name}</option>)}</Select>
+          <Select label="Mes asignado" error={errors.planMonth?.message} disabled={!selectedPatientId || Boolean(planId)} {...register("planMonth")}><option value="">{selectedPatientId ? "Selecciona un mes disponible" : "Primero selecciona un paciente"}</option>{availableMonths.map((month) => <option key={month.value} value={month.value}>{month.label}</option>)}</Select>
         </div>
         {selectedPatientId && availableMonths.length === 0 ? <Alert tone="error">Este paciente ya tiene asignados todos los meses disponibles.</Alert> : null}
         <div className="grid gap-5 lg:grid-cols-2"><Input label="Nombre del plan" error={errors.title?.message} {...register("title")} /><Input label="Objetivo" error={errors.objective?.message} {...register("objective")} /></div>
@@ -136,7 +149,8 @@ export function PlanForm() {
 
       <section className="grid gap-4 border-t border-[var(--border)] pt-7">
         <div><h2 className="flex items-center gap-2 text-lg font-bold"><FileUp className="size-5 text-[var(--primary)]" /> Archivo del plan</h2><p className="mt-1 text-sm text-[var(--ink-muted)]">Opcional: adjunta el documento completo que recibirá el paciente.</p></div>
-        <label className="flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-[var(--border)] bg-[var(--surface-muted)] px-5 py-7 text-center transition hover:border-[var(--primary)]"><FileUp className="size-8 text-[var(--primary)]" /><span className="mt-2 font-bold">Seleccionar PDF, DOC o DOCX</span><span className="mt-1 text-xs text-[var(--ink-muted)]">Tamaño máximo: 5 MB</span><input type="file" className="sr-only" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" onChange={(event) => selectFile(event.target.files?.[0])} /></label>
+        <label className="flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-[var(--border)] bg-[var(--surface-muted)] px-5 py-7 text-center transition hover:border-[var(--primary)]"><FileUp className="size-8 text-[var(--primary)]" /><span className="mt-2 font-bold">Seleccionar PDF, DOC o DOCX</span><span className="mt-1 text-xs text-[var(--ink-muted)]">Tamaño máximo: 500 KB</span><input type="file" className="sr-only" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" onChange={(event) => selectFile(event.target.files?.[0])} /></label>
+        {existingPlan?.attachment && !selectedFile ? <p className="text-sm">Archivo actual: {existingPlan.attachment.name} <button type="button" className="ml-3 font-bold text-red-600" onClick={()=>setExistingPlan({...existingPlan,attachment:undefined})}>Quitar</button></p> : null}
         {selectedFile ? <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-[var(--soft-green)] px-4 py-3"><div><p className="text-sm font-bold">{selectedFile.name}</p><p className="text-xs text-[var(--ink-muted)]">{(selectedFile.size / 1024 / 1024).toFixed(2)} MB</p></div><Button type="button" variant="ghost" onClick={() => setSelectedFile(null)}><Trash2 className="size-4" /> Quitar archivo</Button></div> : null}
       </section>
 
@@ -151,7 +165,7 @@ export function PlanForm() {
         </div>
       </section>
 
-      <Button type="submit" disabled={isSubmitting} fullWidth><ClipboardPlus className="size-4" /> {isSubmitting ? "Creando..." : "Crear y asignar plan"}</Button>
+      <Button type="submit" disabled={isSubmitting} fullWidth><ClipboardPlus className="size-4" /> {isSubmitting ? "Guardando..." : planId ? "Guardar cambios del plan" : "Crear y asignar plan"}</Button>
     </form>
   );
 }

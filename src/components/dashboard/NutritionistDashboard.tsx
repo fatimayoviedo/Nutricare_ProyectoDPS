@@ -15,6 +15,7 @@ import type { Consultation, NutritionPlan, Patient } from "@/types";
 import { getErrorMessage } from "@/utils/errorHandler";
 
 export function NutritionistDashboard() {
+  const [now] = useState(() => Date.now());
   const [patients, setPatients] = useState<Patient[]>([]);
   const [consultations, setConsultations] = useState<Consultation[]>([]);
   const [plans, setPlans] = useState<NutritionPlan[]>([]);
@@ -27,7 +28,7 @@ export function NutritionistDashboard() {
       setPlans(planData);
     }).catch((cause: unknown) => setError(getErrorMessage(cause))).finally(() => setLoading(false));
   }, []);
-  const nextConsultation = useMemo(() => consultations.filter((item) => item.status === "scheduled").toSorted((a, b) => a.date.localeCompare(b.date))[0], [consultations]);
+  const nextConsultation = useMemo(() => consultations.filter((item) => item.status === "scheduled" && new Date(item.date).getTime() >= now).toSorted((a, b) => a.date.localeCompare(b.date))[0], [consultations, now]);
   if (loading) return <div className="grid min-h-72 place-items-center"><Spinner label="Cargando resumen profesional" /></div>;
   return (
     <div className="grid gap-6">
@@ -58,7 +59,7 @@ export function NutritionistDashboard() {
         <Card className="bg-[var(--primary-dark)] text-white">
           <div className="flex items-center gap-3"><span className="grid size-11 place-items-center rounded-2xl bg-white/12"><Clock3 /></span><div><p className="text-sm text-emerald-100">Próxima consulta</p><h2 className="text-xl font-bold">{nextConsultation?.patientName ?? "Sin consultas"}</h2></div></div>
           <p className="mt-8 text-4xl font-extrabold tracking-[-0.05em]">{nextConsultation ? new Date(nextConsultation.date).toLocaleTimeString("es-SV", { hour: "2-digit", minute: "2-digit" }) : "--:--"}</p>
-          <p className="mt-2 text-sm text-emerald-100">{nextConsultation ? `${nextConsultation.type} · ${nextConsultation.mode}` : "Programa una nueva consulta"}</p>
+          <p className="mt-2 text-sm text-emerald-100">{nextConsultation ? `${new Date(nextConsultation.date).toLocaleDateString("es-SV")} · ${nextConsultation.type} · ${nextConsultation.mode}` : "Programa una nueva consulta"}</p>
           <Link href="/consultas" className="mt-8 block rounded-xl bg-white px-4 py-3 text-center text-sm font-bold text-[var(--primary-dark)]">Abrir consulta</Link>
         </Card>
       </div>

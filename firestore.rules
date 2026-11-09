@@ -1,0 +1,123 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // users/{uid}: private profile. role selects a workspace UI; it grants no
+    // access to another workspace. id and role are immutable.
+    // records/{id}: id/kind/ownerId/patientId/patientEmail/authorId/createdAt
+    // are immutable strings. payload is bounded JSON, validated by app schemas.
+    // updatedAt is an ISO string; archived/approved are booleans; feedback is text.
+    // Clinical records belong to their creator. A verified patient email grants
+    // read access to that patient's records and authorship of their own photos.
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function ownsUser(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function validUser(data) {
+      return data.keys().hasAll(['id', 'name', 'email', 'role'])
+        && data.keys().hasOnly(['id', 'name', 'email', 'role', 'photoUrl'])
+        && data.id is string
+        && data.id.size() <= 128
+        && data.name is string
+        && data.name.size() > 0
+        && data.name.size() <= 120
+        && data.email is string
+        && data.email.size() > 3
+        && data.email.size() <= 254
+        && data.role in ['patient', 'nutritionist']
+        && (!('photoUrl' in data) || (data.photoUrl is string && data.photoUrl.size() <= 2048));
+    }
+
+    function bounded(value, max) { return value is string && value.size() > 0 && value.size() <= max; }
+    function recipient(data) {
+      return signedIn() && request.auth.token.email_verified == true
+        && request.auth.token.email.lower() == data.patientEmail;
+    }
+    function owner(data) { return signedIn() && data.ownerId == request.auth.uid; }
+    function validRecord(data, id) {
+      let fields = ['id','kind','ownerId','patientId','patientEmail','authorId','payload','createdAt','updatedAt','archived','feedback','approved'];
+      return data.keys().hasAll(fields) && data.keys().hasOnly(fields)
+        && data.id == id && bounded(data.id, 400)
+        && data.kind in ['patients','measurements','consultations','plans','photos','habits']
+        && bounded(data.ownerId, 128) && bounded(data.authorId, 128)
+        && bounded(data.patientId, 400) && bounded(data.patientEmail, 254)
+        && data.patientEmail == data.patientEmail.lower()
+        && bounded(data.payload, 750000)
+        && bounded(data.createdAt, 30) && bounded(data.updatedAt, 30)
+        && data.archived is bool && data.approved is bool
+        && data.feedback is string && data.feedback.size() <= 4000;
+    }
+    function validParent(data) {
+      let parent = get(/databases/$(database)/documents/records/$(data.patientId)).data;
+      return parent.kind == 'patients' && !parent.archived
+        && parent.ownerId == data.ownerId && parent.patientEmail == data.patientEmail;
+    }
+    function validCreation(data) {
+      return data.authorId == request.auth.uid && !data.archived && !data.approved && data.feedback == ''
+        && ((data.kind == 'patients' && owner(data) && data.patientId == data.id)
+          || (data.kind == 'habits' && owner(data) && data.patientId == request.auth.uid && data.patientEmail == request.auth.token.email.lower())
+          || (data.kind in ['measurements','consultations','plans'] && owner(data) && validParent(data))
+          || (data.kind == 'photos' && validParent(data) && (owner(data) || recipient(data))));
+    }
+    function validChange(data, old) {
+      let changes = data.diff(old).affectedKeys();
+      return !old.archived
+        && !changes.hasAny(['id','kind','ownerId','patientId','patientEmail','authorId','createdAt'])
+        && ((old.kind != 'photos' && owner(old) && changes.hasOnly(['payload','updatedAt','archived']))
+          || (old.kind == 'photos' && owner(old) && changes.hasOnly(['feedback','approved','updatedAt','archived']))
+          || (old.kind == 'photos' && old.authorId == request.auth.uid && (recipient(old) || owner(old)) && changes.hasOnly(['payload','updatedAt','archived'])));
+    }
+
+    match /records/{id} {
+      // Transactions may check a not-yet-created record without exposing data.
+      allow get: if signedIn() && (resource == null || owner(resource.data) || recipient(resource.data));
+      allow list: if owner(resource.data) || recipient(resource.data);
+      allow create: if signedIn() && validRecord(request.resource.data, id) && validCreation(request.resource.data);
+      allow update: if signedIn() && validRecord(request.resource.data, id) && validChange(request.resource.data, resource.data);
+      allow delete: if false;
+    }
+
+    function validSettings(data) {
+      return data.keys().hasOnly(['preferences','readNotifications'])
+        && (!('readNotifications' in data) || (data.readNotifications is string && data.readNotifications.size() <= 20000))
+        && (!('preferences' in data) || (
+          data.preferences is map
+          && data.preferences.keys().hasAll(['meals','water','appointments','consultations','mealPhotos','planReviews'])
+          && data.preferences.keys().hasOnly(['meals','water','appointments','consultations','mealPhotos','planReviews'])
+          && data.preferences.meals is bool && data.preferences.water is bool
+          && data.preferences.appointments is bool && data.preferences.consultations is bool
+          && data.preferences.mealPhotos is bool && data.preferences.planReviews is bool));
+    }
+    // Private settings: six boolean preferences and bounded encoded notification IDs.
+    match /settings/{uid} {
+      allow read: if ownsUser(uid);
+      allow create, update: if ownsUser(uid) && validSettings(request.resource.data);
+      allow delete: if ownsUser(uid);
+    }
+
+    match /users/{uid} {
+      allow get: if ownsUser(uid);
+      allow list: if false;
+
+      allow create: if ownsUser(uid)
+        && validUser(request.resource.data)
+        && request.resource.data.id == uid;
+
+      allow update: if ownsUser(uid)
+        && validUser(request.resource.data)
+        && request.resource.data.id == resource.data.id
+        && request.resource.data.role == resource.data.role;
+
+      allow delete: if ownsUser(uid);
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

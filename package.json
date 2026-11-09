@@ -8,7 +8,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:rules": "node --test tests/firestore-rules.test.mjs",
+    "test:e2e": "playwright test",
+    "web:stable": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start-web.ps1"
   },
   "dependencies": {
     "@hookform/resolvers": "latest",
@@ -22,6 +25,8 @@
     "zod": "latest"
   },
   "devDependencies": {
+    "@firebase/rules-unit-testing": "^6.0.0",
+    "@playwright/test": "^1.64.1",
     "@tailwindcss/postcss": "latest",
     "@types/node": "latest",
     "@types/react": "latest",
@@ -29,6 +34,7 @@
     "eslint": "9.39.1",
     "eslint-config-next": "latest",
     "tailwindcss": "latest",
+    "tsx": "^4.23.15",
     "typescript": "5.9.3"
   }
 }

@@ -25,7 +25,7 @@ export const planSchema = z.object({
   attachment: z.object({
     name: z.string().min(1),
     mimeType: z.string().min(1),
-    sizeBytes: z.number().positive().max(5 * 1024 * 1024),
+    sizeBytes: z.number().positive().max(500 * 1024),
     dataUrl: z.string().min(1),
   }).optional(),
 });

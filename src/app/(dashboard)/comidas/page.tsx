@@ -1,6 +1,6 @@
 "use client";
 
-import { Apple, Camera, Coffee, CupSoda, ImagePlus, Moon, Pencil, Soup, Trash2, UtensilsCrossed } from "lucide-react";
+import { Apple, Camera, Coffee, ImagePlus, Moon, Pencil, Soup, Trash2, UtensilsCrossed } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { PageHeader } from "@/components/dashboard/PageHeader";
@@ -10,21 +10,29 @@ import { Card } from "@/components/ui/Card";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Modal } from "@/components/ui/Modal";
 import { Select } from "@/components/ui/Select";
+import { patientService } from '@/services/patientService';
+import { planService } from '@/services/planService';
+import type { Patient, NutritionPlan } from '@/types';
+import { getErrorMessage } from '@/utils/errorHandler';
+import { localDate } from '@/utils/localDate';
 import { deleteStoredPhoto, getStoredPhoto, getStoredPhotos, storePhoto, type StoredMealPhoto } from "@/services/mealPhotoService";
-
-const meals = [
-  { id: "breakfast", icon: Coffee, time: "07:00", title: "Desayuno", detail: "Avena, yogur y frutos rojos", preparation: "Deja reposar desde la noche anterior ⅓ de taza de avena con ½ taza de leche. Agrega ¼ de taza de yogur, ½ taza de frutos rojos y canela al gusto." },
-  { id: "morning-snack", icon: Apple, time: "10:30", title: "Merienda", detail: "Manzana y almendras", preparation: "Lava y corta una manzana en porciones. Acompaña con 6 almendras naturales, sin azúcar ni sal añadida." },
-  { id: "lunch", icon: Soup, time: "13:00", title: "Almuerzo", detail: "Pollo, arroz integral y ensalada", preparation: "Sazona el pollo con ajo, hierbas y pimienta; cocina a la plancha. Prepara el arroz integral sin aceite y acompaña con ensalada fresca y limón." },
-  { id: "afternoon-snack", icon: CupSoda, time: "16:30", title: "Merienda", detail: "Batido de frutas", preparation: "Licúa 1½ taza de bebida de almendra sin azúcar con cocoa, 1 cucharada de mantequilla de maní y ½ taza de fruta. Agrega hielo al gusto." },
-  { id: "dinner", icon: Moon, time: "19:30", title: "Cena", detail: "Crema de verduras y pan integral", preparation: "Cocina las verduras con agua, ajo y hierbas, sin consomé ni cubitos. Licúa hasta obtener una crema suave y sirve con una tostada de pan integral." },
-];
 
 interface MealPhoto extends Omit<StoredMealPhoto, "file"> {
   url: string;
 }
 
 export default function MealsPage() {
+  const [patients, setPatients] = useState<Patient[]>([]);
+  const [patientId, setPatientId] = useState('');
+  const [plans, setPlans] = useState<NutritionPlan[]>([]);
+  const [saving, setSaving] = useState(false);
+  const plan = plans.find(item => item.patientId === patientId && item.active && item.planMonth === localDate().slice(0,7));
+  const meals = plan?.meals.map(item => ({...item, icon:UtensilsCrossed, detail:item.description, preparation:item.comments || item.portion})) ?? [
+    {id:'breakfast',title:'Desayuno',time:'',icon:Coffee,detail:'',preparation:''},
+    {id:'lunch',title:'Almuerzo',time:'',icon:Soup,detail:'',preparation:''},
+    {id:'dinner',title:'Cena',time:'',icon:Moon,detail:'',preparation:''},
+    {id:'snack',title:'Merienda',time:'',icon:Apple,detail:'',preparation:''},
+  ];
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploadOpen, setUploadOpen] = useState(false);
   const [editingPhotoId, setEditingPhotoId] = useState<string | null>(null);
@@ -40,7 +48,8 @@ export default function MealsPage() {
   useEffect(() => {
     let active = true;
     const urls: string[] = [];
-    getStoredPhotos("gerardo-pena").then((records) => {
+    Promise.all([getStoredPhotos(), patientService.list(), planService.list()]).then(([records, people, plans]) => {
+      setPatients(people); setPatientId(people[0]?.id ?? ''); setPlans(plans);
       if (!active) return;
       const loaded = records.toSorted((a, b) => b.createdAt.localeCompare(a.createdAt)).map(({ file, ...record }) => {
         const url = URL.createObjectURL(file);
@@ -66,6 +75,7 @@ export default function MealsPage() {
 
   function openEditor(photo: MealPhoto) {
     setEditingPhotoId(photo.id);
+    setPatientId(photo.patientId);
     setSelectedMeal(photo.mealId);
     setComment(photo.comment);
     setSelectedFile(null);
@@ -95,6 +105,9 @@ export default function MealsPage() {
 
   async function savePhoto(event: FormEvent) {
     event.preventDefault();
+    if (saving) return;
+    if (!patientId) { setError("Tu nutricionista debe crear un expediente con tu correo verificado antes de subir fotografías."); return; }
+    setSaving(true);
     if (editingPhotoId) {
       try {
         const stored = await getStoredPhoto(editingPhotoId);
@@ -103,18 +116,18 @@ export default function MealsPage() {
         setPhotos((current) => current.map((photo) => photo.id === editingPhotoId ? { ...photo, mealId: selectedMeal, comment: comment.trim() } : photo));
         closePhotoForm();
         setSavedMessage("Los datos de la fotografía se actualizaron correctamente.");
-      } catch { setError("No fue posible actualizar la fotografía. Inténtalo nuevamente."); }
+      } catch (cause) { setError(getErrorMessage(cause)); } finally { setSaving(false); }
       return;
     }
-    if (!selectedFile) { setError("Primero toma o elige una fotografía."); return; }
-    const record: StoredMealPhoto = { id: crypto.randomUUID(), patientId: "gerardo-pena", mealId: selectedMeal, comment: comment.trim(), createdAt: new Date().toISOString(), name: selectedFile.name, file: selectedFile, reviewStatus: "pending", nutritionistComment: "" };
+    if (!selectedFile) { setError("Primero toma o elige una fotografía."); setSaving(false); return; }
+    const record: StoredMealPhoto = { id: crypto.randomUUID(), patientId, mealId: selectedMeal, comment: comment.trim(), createdAt: new Date().toISOString(), name: selectedFile.name, file: selectedFile, reviewStatus: "pending", nutritionistComment: "" };
     try {
       await storePhoto(record);
       const url = URL.createObjectURL(selectedFile);
       setPhotos((current) => [{ ...record, url }, ...current]);
       closePhotoForm();
       setSavedMessage("Fotografía guardada. Solo estará disponible dentro de NutriCare para el seguimiento nutricional.");
-    } catch { setError("No fue posible guardar la fotografía. Inténtalo nuevamente."); }
+    } catch (cause) { setError(getErrorMessage(cause)); } finally { setSaving(false); }
   }
 
   async function deletePhoto() {
@@ -131,10 +144,13 @@ export default function MealsPage() {
   return (
     <>
       <PageHeader title="Comidas de hoy" description="Vista previa de tu plan diario, con porciones y una guía breve de preparación." action={<Button type="button" onClick={() => openUploader()}><Camera className="size-4" /> Agregar fotografía</Button>} />
+      {error && !uploadOpen ? <Alert tone="error">{error}</Alert> : null}
+      {!plan ? <Card>No hay un menú asignado para este mes. Puedes registrar tus comidas para revisarlas con tu nutricionista.</Card> : null}
+      {patients.length > 1 ? <Select label="Expediente para enviar fotografías" value={patientId} onChange={event => setPatientId(event.target.value)}>{patients.map(patient => <option key={patient.id} value={patient.id}>{patient.name} · {patient.id.slice(0,8)}</option>)}</Select> : null}
       {savedMessage ? <div className="mb-5"><Alert>{savedMessage}</Alert></div> : null}
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {meals.map(({ id, icon: Icon, time, title, detail, preparation }) => <Card key={id} className="flex h-full flex-col">
+        {(plan ? meals : []).map(({ id, icon: Icon, time, title, detail, preparation }) => <Card key={id} className="flex h-full flex-col">
           <div className="flex items-start gap-4"><span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-[var(--soft-green)] text-[var(--primary)]"><Icon /></span><div><p className="text-xs font-bold text-[var(--primary)]">{time}</p><h2 className="mt-1 text-lg font-bold">{title}</h2><p className="mt-1 text-sm text-[var(--ink-muted)]">{detail}</p></div></div>
           <div className="mt-5 flex-1 rounded-2xl bg-[var(--surface-muted)] p-4"><div className="flex items-center gap-2 text-sm font-bold"><UtensilsCrossed className="size-4 text-[var(--primary)]" /> Preparación</div><p className="mt-2 text-sm leading-6 text-[var(--ink-muted)]">{preparation}</p></div>
           <button type="button" onClick={() => openUploader(id)} className="mt-4 inline-flex items-center gap-2 self-start text-sm font-bold text-[var(--primary)]"><ImagePlus className="size-4" /> Subir foto de esta comida</button>
@@ -153,10 +169,10 @@ export default function MealsPage() {
           <Select label="Tipo de comida" value={selectedMeal} onChange={(event) => setSelectedMeal(event.target.value)}>{meals.map((meal) => <option key={meal.id} value={meal.id}>{meal.title} · {meal.time}</option>)}</Select>
           <label className="grid gap-2 text-sm font-medium">Comentario opcional<textarea value={comment} onChange={(event) => setComment(event.target.value)} placeholder="Ej. Cambié arroz por papa" rows={3} className="rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-base outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary-ring)]" /></label>
           {error ? <Alert tone="error">{error}</Alert> : null}
-          <Button type="submit" fullWidth>{editingPhotoId ? "Guardar cambios" : "Guardar fotografía"}</Button>
+          <Button type="submit" disabled={saving} fullWidth>{saving ? "Guardando..." : editingPhotoId ? "Guardar cambios" : "Guardar fotografía"}</Button>
         </form>
       </Modal>
-      <ConfirmDialog open={Boolean(photoToDelete)} title="Eliminar fotografía" description="La fotografía se eliminará definitivamente de tu seguimiento nutricional." confirmLabel="Sí, eliminar" tone="danger" onCancel={() => setPhotoToDelete(null)} onConfirm={() => void deletePhoto()} />
+      <ConfirmDialog open={Boolean(photoToDelete)} title="Eliminar fotografía" description="La fotografía se retirará de la lista y quedará archivada en el historial." confirmLabel="Sí, eliminar" tone="danger" onCancel={() => setPhotoToDelete(null)} onConfirm={() => void deletePhoto()} />
     </>
   );
 }

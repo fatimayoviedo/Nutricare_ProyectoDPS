@@ -75,7 +75,7 @@ export function ConsultationDetail({ id }: { id: string }) {
         <div className="mb-6 flex items-start gap-3"><span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-[var(--soft-green)] text-[var(--primary)]"><CalendarCheck /></span><div><h2 className="text-xl font-bold">Información y seguimiento</h2><p className="mt-1 text-sm text-[var(--ink-muted)]">Actualiza la programación, las notas clínicas y el estado de la consulta.</p></div></div>
         <form onSubmit={onSubmit} className="grid gap-5" noValidate>
           <div className="grid gap-5 md:grid-cols-2">
-            <Select label="Paciente" error={errors.patientId?.message} {...register("patientId")}><option value="">Selecciona un paciente</option>{patients.map((patient) => <option key={patient.id} value={patient.id}>{patient.name}</option>)}</Select>
+            <Select label="Paciente" disabled error={errors.patientId?.message} {...register("patientId")}><option value="">Selecciona un paciente</option>{patients.map((patient) => <option key={patient.id} value={patient.id}>{patient.name}</option>)}</Select>
             <Input label="Fecha y hora" type="datetime-local" error={errors.date?.message} {...register("date")} />
             <Input label="Tipo de consulta" error={errors.type?.message} {...register("type")} />
             <Select label="Modalidad" error={errors.mode?.message} {...register("mode")}><option value="Videollamada">Videollamada</option><option value="Presencial">Presencial</option></Select>

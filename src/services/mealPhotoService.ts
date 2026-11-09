@@ -1,4 +1,27 @@
+import { isFirebaseConfigured } from '@/lib/firebase/firebase';
+import { archiveCloudRecord, currentCloudUser, decodeRecord, getCloudRecord, listCloudRecords, reviewCloudPhoto, saveCloudRecord, type CloudRecord } from './cloudRecords';
+
 export type MealPhotoReviewStatus = "pending" | "approved";
+
+async function photoFromCloud(record: CloudRecord): Promise<StoredMealPhoto> {
+  const data = decodeRecord<Omit<StoredMealPhoto, 'file'> & { image: string }>(record);
+  if (!/^data:image\/(jpeg|png|webp);base64,/.test(data.image)) throw new Error('Esta fotografía no contiene una imagen válida. Vuelve a subirla.');
+  return { ...data, file: await (await fetch(data.image)).blob(), nutritionistComment: record.feedback, reviewStatus: record.approved ? 'approved' : 'pending' };
+}
+
+async function optimizePhoto(file: Blob): Promise<string> {
+  if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) throw new Error('Selecciona una fotografía JPG, PNG o WebP.');
+  const bitmap = await createImageBitmap(file);
+  try {
+    const canvas = document.createElement('canvas');
+    const scale = Math.min(1, 1000 / Math.max(bitmap.width, bitmap.height));
+    canvas.width = Math.round(bitmap.width * scale); canvas.height = Math.round(bitmap.height * scale);
+    canvas.getContext('2d')!.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    const image = canvas.toDataURL('image/jpeg', 0.65);
+    if (image.length > 650000) throw new Error('La imagen sigue siendo demasiado grande. Elige una fotografía más pequeña.');
+    return image;
+  } finally { bitmap.close(); }
+}
 
 export interface StoredMealPhoto {
   id: string;
@@ -44,6 +67,10 @@ function normalizePhoto(photo: Partial<StoredMealPhoto> & Pick<StoredMealPhoto, 
 }
 
 export async function getStoredPhotos(patientId?: string): Promise<StoredMealPhoto[]> {
+  if (isFirebaseConfigured) {
+    const records = (await listCloudRecords('photos')).filter(item => !patientId || item.patientId === patientId);
+    return Promise.all(records.map(photoFromCloud));
+  }
   const database = await openPhotoDatabase();
   return new Promise((resolve, reject) => {
     const request = database.transaction(STORE_NAME, "readonly").objectStore(STORE_NAME).getAll();
@@ -56,6 +83,21 @@ export async function getStoredPhotos(patientId?: string): Promise<StoredMealPho
 }
 
 export async function storePhoto(photo: StoredMealPhoto): Promise<void> {
+  if (photo.comment.length > 4000 || photo.nutritionistComment.length > 4000) throw new Error('El comentario no puede superar 4,000 caracteres.');
+  if (isFirebaseConfigured) {
+    const user = currentCloudUser();
+    const all = await listCloudRecords('photos');
+    const existing = all.find(item => item.id === photo.id);
+    if (existing && existing.ownerId === user.uid && existing.authorId !== user.uid) {
+      await reviewCloudPhoto(existing.id, photo.nutritionistComment, photo.reviewStatus === 'approved');
+      return;
+    }
+    const patient = (await listCloudRecords('patients')).find(item => item.id === photo.patientId);
+    if (!patient) throw new Error('Tu nutricionista debe crear tu expediente con tu correo verificado antes de subir fotografías.');
+    const { file, ...data } = photo;
+    await saveCloudRecord('photos', { ...data, image: await optimizePhoto(file) }, existing?.id);
+    return;
+  }
   const database = await openPhotoDatabase();
   return new Promise((resolve, reject) => {
     const request = database.transaction(STORE_NAME, "readwrite").objectStore(STORE_NAME).put(photo);
@@ -65,6 +107,7 @@ export async function storePhoto(photo: StoredMealPhoto): Promise<void> {
 }
 
 export async function getStoredPhoto(id: string): Promise<StoredMealPhoto | undefined> {
+  if (isFirebaseConfigured) return photoFromCloud(await getCloudRecord(id));
   const database = await openPhotoDatabase();
   return new Promise((resolve, reject) => {
     const request = database.transaction(STORE_NAME, "readonly").objectStore(STORE_NAME).get(id);
@@ -74,6 +117,7 @@ export async function getStoredPhoto(id: string): Promise<StoredMealPhoto | unde
 }
 
 export async function deleteStoredPhoto(id: string): Promise<void> {
+  if (isFirebaseConfigured) return archiveCloudRecord(id);
   const database = await openPhotoDatabase();
   return new Promise((resolve, reject) => {
     const request = database.transaction(STORE_NAME, "readwrite").objectStore(STORE_NAME).delete(id);
@@ -88,6 +132,7 @@ function mealIllustration(title: string, background: string, accent: string): Bl
 }
 
 export async function ensureDemoMealPhotos(): Promise<void> {
+  if (isFirebaseConfigured) return;
   const existing = await getStoredPhotos();
   if (existing.length > 0) return;
   const demoPhotos: StoredMealPhoto[] = [

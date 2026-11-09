@@ -24,9 +24,11 @@ export function PatientList() {
 
   async function handleDelete() {
     if (!patientToDelete) return;
-    await removePatient(patientToDelete.id);
-    setPatientToDelete(null);
-    setMessage("Paciente eliminado correctamente.");
+    try {
+      await removePatient(patientToDelete.id);
+      setPatientToDelete(null);
+      setMessage("Paciente archivado correctamente. Puedes consultar sus registros en Historial.");
+    } catch { setPatientToDelete(null); }
   }
 
   return (
@@ -61,7 +63,7 @@ export function PatientList() {
           </article>
         ))}
       </div>
-      <ConfirmDialog open={Boolean(patientToDelete)} title="Eliminar paciente" description={`Se eliminará a ${patientToDelete?.name ?? "este paciente"} junto con sus registros asociados. Esta acción no se puede deshacer.`} confirmLabel="Sí, eliminar" tone="danger" onCancel={() => setPatientToDelete(null)} onConfirm={() => void handleDelete()} />
+      <ConfirmDialog open={Boolean(patientToDelete)} title="Archivar paciente" description={`El expediente de ${patientToDelete?.name ?? "este paciente"} se retirará de los módulos activos. Sus registros se conservarán en Historial.`} confirmLabel="Sí, archivar" tone="danger" onCancel={() => setPatientToDelete(null)} onConfirm={() => void handleDelete()} />
     </div>
   );
 }

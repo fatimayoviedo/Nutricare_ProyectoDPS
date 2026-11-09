@@ -8,11 +8,11 @@ import { PageHeader } from "./PageHeader";
 export function RoleDashboard() {
   const { user } = useAuth();
   const role = user?.role ?? "patient";
-  const patientFirstName = user?.name.split(" ")[0] ?? "Gerardo";
+  const patientFirstName = user?.name.split(" ")[0] ?? "Usuario";
   return (
     <>
       <PageHeader
-        title={role === "nutritionist" ? "Buenos días, Licda. Fátima" : `Hola, ${patientFirstName}`}
+        title={`Hola, ${patientFirstName}`}
         description={role === "nutritionist" ? "Aquí tienes el panorama de tus pacientes y consultas." : "Este es tu resumen nutricional y tu plan para hoy."}
       />
       {role === "nutritionist" ? <NutritionistDashboard /> : <PatientDashboard />}

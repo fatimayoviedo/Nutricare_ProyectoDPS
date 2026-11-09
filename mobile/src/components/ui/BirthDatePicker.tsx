@@ -12,6 +12,7 @@ function parseDate(value: string, fallbackYear: number) {
 }
 
 export function BirthDatePicker({ value, onChange, error, label = 'Fecha de nacimiento', fallbackYear = new Date().getFullYear() - 18 }: { value: string; onChange: (value: string) => void; error?: string; label?: string; fallbackYear?: number }) {
+  const safeLabel = label || 'Fecha de nacimiento';
   const [open, setOpen] = useState(false);
   const [shown, setShown] = useState(() => parseDate(value, fallbackYear));
   const firstWeekday = new Date(shown.year, shown.month, 1).getDay();
@@ -25,8 +26,8 @@ export function BirthDatePicker({ value, onChange, error, label = 'Fecha de naci
 
   return (
     <View style={styles.wrapper}>
-      <Text style={styles.label}>{label}</Text>
-      <Pressable accessibilityRole="button" accessibilityLabel={`Seleccionar ${label.toLowerCase()}`} onPress={() => { setShown(parseDate(value, fallbackYear)); setOpen(true); }} style={[styles.field, error && styles.fieldError]}>
+      <Text style={styles.label}>{safeLabel}</Text>
+      <Pressable accessibilityRole="button" accessibilityLabel={`Seleccionar ${safeLabel.toLowerCase()}`} onPress={() => { setShown(parseDate(value, fallbackYear)); setOpen(true); }} style={[styles.field, error && styles.fieldError]}>
         <Text style={value ? styles.value : styles.placeholder}>{value || 'Selecciona una fecha'}</Text>
         <Text style={styles.calendarIcon}>▦</Text>
       </Pressable>
@@ -36,7 +37,7 @@ export function BirthDatePicker({ value, onChange, error, label = 'Fecha de naci
           <Pressable style={StyleSheet.absoluteFill} onPress={() => setOpen(false)} accessibilityLabel="Cerrar calendario" />
           <View style={styles.dialog}>
             <View style={styles.header}>
-              <Text style={styles.title}>{label}</Text>
+              <Text style={styles.title}>{safeLabel}</Text>
               <Pressable onPress={() => setOpen(false)} accessibilityLabel="Cerrar"><Text style={styles.close}>×</Text></Pressable>
             </View>
             <View style={styles.yearRow}>
