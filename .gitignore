@@ -26,6 +26,13 @@
 
 # typescript
 *.tsbuildinfo
+.local-tools/
+.next-test/
+test-results/
+playwright-report/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
 next-env.d.ts
 
 # Firebase private credentials
