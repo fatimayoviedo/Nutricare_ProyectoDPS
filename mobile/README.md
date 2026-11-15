@@ -1,24 +1,4 @@
-# NutriCare Mobile - Avance 1
 
-Versión móvil de NutriCare desarrollada con React Native, Expo SDK 58, Expo Router y TypeScript.
-
-## Funcionalidades implementadas
-
-- Inicio de sesión funcional con cuentas de demostración.
-- Registro de pacientes y nutricionistas con validación de campos.
-- Recuperación de acceso con validación de correo.
-- Sesión persistente mediante AsyncStorage.
-- Navegación inferior por rol: Inicio, Pacientes, Planes y Perfil para nutricionista; Inicio, Planes, Progreso y Perfil para paciente.
-- Dashboard diferenciado por rol.
-- Consulta del menú diario y del plan mensual, con indicaciones clínicas de solo lectura.
-- Filtros funcionales de progreso por seis meses, un año y todo el historial.
-- Calendario para editar la fecha de nacimiento y confirmación al guardar el perfil.
-- Registro de medidas en consultorio, medidas adicionales e IMC calculado. Los registros se conservan localmente en el dispositivo y aparecen en el progreso del paciente correspondiente.
-- Selección y validación de fotografías de comidas.
-- Captura de fotografías con cámara en dispositivos compatibles.
-- Registro persistente de nuevos pacientes con validación de mayoría de edad.
-- Revisión de pendientes y edición funcional del perfil.
-- Componentes reutilizables y estilos coherentes con los mockups de Figma de la Etapa 1.
 
 ## Cuentas para la demostración
 
@@ -30,17 +10,6 @@ Versión móvil de NutriCare desarrollada con React Native, Expo SDK 58, Expo Ro
 ## Ejecutar el proyecto
 
 Desde la carpeta raíz de NutriCare:
-
-```powershell
-pnpm install
-pnpm --filter mobile start
-```
-
-Después:
-
-- Escanea el código QR con Expo Go para abrirlo en un teléfono conectado a la misma red.
-- Presiona `a` para Android si Android Studio y un emulador están configurados.
-- Presiona `w` para abrir la versión web de apoyo.
 
 También se puede iniciar directamente desde esta carpeta:
 
