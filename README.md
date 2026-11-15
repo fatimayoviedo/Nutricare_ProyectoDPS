@@ -14,10 +14,7 @@ Con Firebase configurado se utilizan cuentas reales creadas en **Crear cuenta** 
 pnpm install
 pnpm dev
 ```
-
 Abrir `http://localhost:3000`.
-
-La guía de configuración, los módulos conectados a Firestore, el arranque estable y las pruebas están en [docs/WEB-FIREBASE.md](docs/WEB-FIREBASE.md).
 
 ## Ejecución de la versión móvil
 
@@ -31,9 +28,12 @@ Consultar la guía completa en [`mobile/README.md`](mobile/README.md).
 ## Integrante
 **Fátima Yesenia Oviedo Martínez -- OM160481**
 
-•	Enlace GITHUB:
+**•	Enlace GITHUB:**
 https://github.com/fatimayoviedo/Nutricare_ProyectoDPS.git
 
-•	Enlace video:
-https://udbedu-my.sharepoint.com/:f:/g/personal/om160481_alumno_udb_edu_sv/IgDVu2Aj-hOETYHkQLkuc8SOAdL40UrsP2g362VWiNXwWro?e=HK5RXm
+**•	Enlace documento**
+https://udbedu-my.sharepoint.com/:f:/g/personal/om160481_alumno_udb_edu_sv/IgDVu2Aj-hOETYHkQLkuc8SOAdL40UrsP2g362VWiNXwWro?e=QEz3fB
+
+**•	Enlace video**
+https://udbedu-my.sharepoint.com/:v:/g/personal/om160481_alumno_udb_edu_sv/IQBX3fcPFhdFQId0x4_S2WKNAbih1M_RBliM0YTfZG49i4A?e=qw3zoC
 
