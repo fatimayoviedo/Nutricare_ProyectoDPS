@@ -36,6 +36,3 @@ src/
   types/           Tipos compartidos de TypeScript
 ```
 
-## Nota académica
-
-La autenticación y las mediciones de este avance usan almacenamiento local para demostrar los flujos sin depender de servicios externos. Los registros móviles no se sincronizan automáticamente con el sitio web. En una versión de producción las credenciales se validarían en un backend seguro y nunca se guardarían como texto plano en el dispositivo.
